@@ -2,38 +2,41 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>PDF分割ツール v1.10 (超高速版)</title>
+    <title>PDF分割ツール v1.11</title>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; max-width: 700px; margin: auto; line-height: 1.6; color: #333; background-color: #f8f9fa; }
-        h1 { color: #1a73e8; border-bottom: 2px solid #1a73e8; padding-bottom: 10px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; max-width: 750px; margin: auto; line-height: 1.6; color: #333; background-color: #f8f9fa; }
+        h1 { color: #1a73e8; border-bottom: 2px solid #1a73e8; padding-bottom: 10px; margin-bottom: 5px; }
         .version-tag { text-align: right; font-size: 0.8em; color: #777; margin-bottom: 20px; }
         .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px;}
-        #drop_zone { border: 2px dashed #1a73e8; border-radius: 10px; padding: 50px 20px; text-align: center; background: #fff; cursor: pointer; transition: 0.2s; }
-        #drop_zone:hover { background: #f1f3f4; border-color: #174ea6; }
+        #drop_zone { border: 2px dashed #1a73e8; border-radius: 10px; padding: 40px 20px; text-align: center; background: #fff; cursor: pointer; transition: 0.2s; }
+        #drop_zone:hover { background: #f1f3f4; }
+        .mode-selector { display: flex; gap: 10px; margin-bottom: 20px; }
+        .mode-btn { flex: 1; padding: 10px; border: 2px solid #dadce0; border-radius: 8px; cursor: pointer; background: white; font-weight: bold; transition: 0.2s; }
+        .mode-btn.active { border-color: #1a73e8; background: #e8f0fe; color: #1a73e8; }
         #status { font-weight: bold; margin: 15px 0; text-align: center; }
         .error { color: #d93025; }
         .success { color: #1e8e3e; }
-        button { background-color: #1a73e8; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%; padding: 15px; font-size: 16px; font-weight: bold; }
-        button:hover { background-color: #174ea6; }
-        button:disabled { background-color: #dadce0; cursor: not-allowed; }
+        button#split_btn { background-color: #1a73e8; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%; padding: 15px; font-size: 16px; font-weight: bold; }
+        button#split_btn:hover { background-color: #174ea6; }
+        button#split_btn:disabled { background-color: #dadce0; }
         #download_link { display: none; text-align: center; background-color: #1e8e3e; color: white; padding: 15px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 15px; }
         .progress-bar { width: 100%; background: #eee; height: 8px; border-radius: 4px; overflow: hidden; display: none; margin-top: 15px; }
         .progress-fill { width: 0%; background: #1a73e8; height: 100%; transition: width 0.1s; }
-        input[type="number"] { width: 60px; padding: 8px; border: 1px solid #dadce0; border-radius: 4px; }
+        .input-group { margin-bottom: 15px; }
+        input[type="number"] { width: 80px; padding: 8px; border: 1px solid #dadce0; border-radius: 4px; }
     </style>
 </head>
 <body>
 
     <h1>✂️ PDF分割ツール</h1>
-    <div class="version-tag">Version 1.10 (High Speed Engine)</div>
+    <div class="version-tag">Version 1.11 (JS Hybrid Engine / Multi-Mode)</div>
 
     <div class="card">
-        <h3>1. ファイルの読み込み</h3>
-        <p style="font-size: 0.85em; color: #5f6368;">※1GBまでの大容量ファイルをサポート。ブラウザ内のみで完結するため安全です。</p>
-        <div id="drop_zone">📂 ここにPDFをドロップ または クリックして選択</div>
+        <h3>1. ファイルを選択</h3>
+        <div id="drop_zone">📂 PDFファイルをドロップ または クリック</div>
         <input type="file" id="file_input" accept="application/pdf" style="display: none;">
         <div id="file_info" style="margin-top:15px; font-weight:bold; color: #1a73e8;"></div>
         <div id="status"></div>
@@ -41,9 +44,23 @@
     </div>
 
     <div id="step2_area" class="card" style="display: none;">
-        <h3>2. 分割の設定</h3>
-        <p>何分割にしますか？: <input type="number" id="num_splits" value="2" min="2" max="100"></p>
-        <div id="split_points_container" style="margin: 15px 0; font-size: 0.9em; background: #f1f3f4; padding: 15px; border-radius: 8px;"></div>
+        <h3>2. 分割方法を選択</h3>
+        <div class="mode-selector">
+            <button class="mode-btn active" id="mode_page">ページ数で分割</button>
+            <button class="mode-btn" id="mode_size">容量(MB)で分割</button>
+        </div>
+
+        <div id="page_setting" class="input-group">
+            何分割にしますか？: <input type="number" id="num_splits" value="2" min="2" max="100"> 分割
+        </div>
+
+        <div id="size_setting" class="input-group" style="display: none;">
+            1ファイルあたりの上限: <input type="number" id="size_limit" value="10" min="1"> MB
+            <p style="font-size: 0.8em; color: #666;">※容量に収まるよう自動でページを割り振ります。</p>
+        </div>
+
+        <div id="split_preview" style="margin: 15px 0; font-size: 0.85em; background: #f1f3f4; padding: 15px; border-radius: 8px;"></div>
+        
         <button id="split_btn">分割処理を実行してZIP保存</button>
         <a id="download_link">⬇️ 生成されたファイルをダウンロード</a>
     </div>
@@ -51,22 +68,42 @@
     <script>
         let pdfData = null;
         let originalFileName = "";
+        let splitMode = 'page'; // 'page' or 'size'
+        let totalFileSize = 0;
 
         const fileInput = document.getElementById('file_input');
         const dropZone = document.getElementById('drop_zone');
         const status = document.getElementById('status');
         const fileInfo = document.getElementById('file_info');
         const step2Area = document.getElementById('step2_area');
-        const numSplits = document.getElementById('num_splits');
         const splitBtn = document.getElementById('split_btn');
+        const preview = document.getElementById('split_preview');
 
-        // ① ファイル選択・ドラッグ&ドロップ
+        // ① モード切り替え
+        document.getElementById('mode_page').onclick = () => {
+            splitMode = 'page';
+            document.getElementById('mode_page').classList.add('active');
+            document.getElementById('mode_size').classList.remove('active');
+            document.getElementById('page_setting').style.display = 'block';
+            document.getElementById('size_setting').style.display = 'none';
+            updatePreview();
+        };
+
+        document.getElementById('mode_size').onclick = () => {
+            splitMode = 'size';
+            document.getElementById('mode_size').classList.add('active');
+            document.getElementById('mode_page').classList.remove('active');
+            document.getElementById('size_setting').style.display = 'block';
+            document.getElementById('page_setting').style.display = 'none';
+            updatePreview();
+        };
+
+        // ② ファイル処理
         dropZone.onclick = () => fileInput.click();
         dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.backgroundColor = '#e8f0fe'; };
         dropZone.ondragleave = () => dropZone.style.backgroundColor = '#fff';
         dropZone.ondrop = (e) => {
             e.preventDefault();
-            dropZone.style.backgroundColor = '#fff';
             handleFile(e.dataTransfer.files[0]);
         };
         fileInput.onchange = (e) => handleFile(e.target.files[0]);
@@ -74,78 +111,81 @@
         async function handleFile(file) {
             if (!file || file.type !== "application/pdf") return;
             originalFileName = file.name.replace(".pdf", "");
+            totalFileSize = file.size;
             status.innerText = "読み込み中...";
-            status.className = "";
             
             try {
                 pdfData = await file.arrayBuffer();
                 const pdfDoc = await PDFLib.PDFDocument.load(pdfData, { ignoreEncryption: true });
                 const totalPages = pdfDoc.getPageCount();
-                
-                fileInfo.innerText = `📄 ${file.name} (${(file.size/1024/1024).toFixed(1)} MB / ${totalPages} ページ)`;
+                fileInfo.innerText = `📄 ${file.name} (${(totalFileSize/1024/1024).toFixed(1)} MB / ${totalPages} ページ)`;
                 status.innerText = "";
                 step2Area.style.display = "block";
-                generateSplitInputs(totalPages);
+                updatePreview();
             } catch (err) {
                 status.innerText = "エラー: PDFの読み込みに失敗しました。";
-                status.className = "error";
             }
         }
 
-        // ② 分割設定の自動生成
-        function generateSplitInputs(total) {
-            const num = parseInt(numSplits.value) || 2;
-            const container = document.getElementById('split_points_container');
-            const step = total / num;
-            let html = "<strong>区切り位置のプレビュー:</strong>";
-            for (let i = 1; i < num; i++) {
-                let val = Math.floor(step * i);
-                html += `<div>区切り ${i}: <input type="number" class="split-point" value="${val}" min="1" max="${total-1}"> ページ目の後ろ</div>`;
+        // ③ プレビュー表示
+        async function updatePreview() {
+            if (!pdfData) return;
+            const pdfDoc = await PDFLib.PDFDocument.load(pdfData);
+            const total = pdfDoc.getPageCount();
+
+            if (splitMode === 'page') {
+                const num = parseInt(document.getElementById('num_splits').value) || 2;
+                const step = Math.ceil(total / num);
+                preview.innerHTML = `<strong>分割イメージ:</strong> 約 ${step} ページずつ ${num} 個のファイルを作成します。`;
+            } else {
+                const limit = parseInt(document.getElementById('size_limit').value) || 10;
+                const estFiles = Math.ceil((totalFileSize/1024/1024) / limit);
+                preview.innerHTML = `<strong>分割イメージ:</strong> 各ファイル最大 ${limit}MB を目安に、約 ${estFiles} 個前後のファイルに分割します。`;
             }
-            container.innerHTML = html;
         }
 
-        numSplits.onchange = () => {
-            if (pdfData) {
-                PDFLib.PDFDocument.load(pdfData).then(doc => generateSplitInputs(doc.getPageCount()));
-            }
-        };
+        document.getElementById('num_splits').oninput = updatePreview;
+        document.getElementById('size_limit').oninput = updatePreview;
 
-        // ③ 分割実行
+        // ④ 分割実行
         splitBtn.onclick = async () => {
-            status.innerText = "処理中... ページ数が多い場合は時間がかかります";
-            status.className = "";
+            status.innerText = "処理中...";
             splitBtn.disabled = true;
             document.getElementById('p_bar').style.display = "block";
             const pFill = document.getElementById('p_fill');
             
             try {
                 const srcDoc = await PDFLib.PDFDocument.load(pdfData);
-                const total = srcDoc.getPageCount();
-                const points = Array.from(document.querySelectorAll('.split-point')).map(el => parseInt(el.value));
-                points.push(total);
-                const sortedPoints = [...new Set(points)].sort((a, b) => a - b);
-                
+                const totalPages = srcDoc.getPageCount();
                 const zip = new JSZip();
-                let start = 0;
-                
-                for (let i = 0; i < sortedPoints.length; i++) {
-                    const end = sortedPoints[i];
-                    if (end <= start) continue;
+                let ranges = [];
 
+                if (splitMode === 'page') {
+                    const num = parseInt(document.getElementById('num_splits').value);
+                    const step = Math.ceil(totalPages / num);
+                    for (let i = 0; i < totalPages; i += step) {
+                        ranges.push({ start: i, end: Math.min(i + step, totalPages) });
+                    }
+                } else {
+                    // 容量ベースのロジック（簡易計算）
+                    const limitMB = parseInt(document.getElementById('size_limit').value);
+                    const avgSizePerPage = totalFileSize / totalPages;
+                    const pagesPerFile = Math.max(1, Math.floor((limitMB * 1024 * 1024) / avgSizePerPage));
+                    for (let i = 0; i < totalPages; i += pagesPerFile) {
+                        ranges.push({ start: i, end: Math.min(i + pagesPerFile, totalPages) });
+                    }
+                }
+
+                for (let i = 0; i < ranges.length; i++) {
+                    const { start, end } = ranges[i];
                     const newDoc = await PDFLib.PDFDocument.create();
-                    const indices = [];
-                    for (let j = start; j < end; j++) indices.push(j);
-                    
+                    const indices = Array.from({length: end - start}, (_, k) => start + k);
                     const copiedPages = await newDoc.copyPages(srcDoc, indices);
-                    copiedPages.forEach(page => newDoc.addPage(page));
+                    copiedPages.forEach(p => newDoc.addPage(p));
                     
                     const pdfBytes = await newDoc.save();
-                    zip.file(`${originalFileName}_part${i+1}_p${start+1}-${end}.pdf`, pdfBytes);
-                    
-                    start = end;
-                    pFill.style.width = `${((i+1)/sortedPoints.length)*100}%`;
-                    // ブラウザのフリーズを防ぐための微小な待ち
+                    zip.file(`${originalFileName}_part${i+1}.pdf`, pdfBytes);
+                    pFill.style.width = `${((i+1)/ranges.length)*100}%`;
                     await new Promise(r => setTimeout(r, 10));
                 }
                 
@@ -154,11 +194,9 @@
                 dlLink.href = URL.createObjectURL(zipBlob);
                 dlLink.download = `${originalFileName}_split.zip`;
                 dlLink.style.display = "block";
-                status.innerText = "✅ 完了しました！";
-                status.className = "success";
+                status.innerText = "✅ 分割完了！";
             } catch (err) {
-                status.innerText = "エラー: 処理に失敗しました。";
-                status.className = "error";
+                status.innerText = "エラーが発生しました。";
                 console.error(err);
             } finally {
                 splitBtn.disabled = false;
