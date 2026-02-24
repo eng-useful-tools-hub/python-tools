@@ -2,113 +2,125 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>高機能 PDF分割ツール v1.09</title>
+    <title>PDF分割ツール v1.10 (超高速版)</title>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-    <script src="https://bundle.run/jszip@3.10.1"></script>
-    <link rel="stylesheet" href="https://pyscript.net/releases/2023.11.1/core.css" />
-    <script type="module" src="https://pyscript.net/releases/2023.11.1/core.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; line-height: 1.6; color: #333; background-color: #f4f7f9; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;}
-        .version-tag { text-align: right; font-size: 0.8em; color: #999; margin-top: -10px; margin-bottom: 10px; }
-        #drop_zone { border: 2px dashed #0969da; border-radius: 10px; padding: 40px; text-align: center; background: #fff; cursor: pointer; }
-        #status { font-weight: bold; margin: 15px 0; text-align: center; color: #d93025; }
-        button { background-color: #0969da; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%; padding: 15px; font-size: 16px; font-weight: bold; transition: 0.2s; }
-        button:hover { background-color: #0550ae; }
-        button:disabled { background-color: #ccc; }
-        #download_link { display: none; text-align: center; background-color: #2ea44f; color: white; padding: 15px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 10px; }
-        .progress-bar { width: 100%; background: #eee; height: 12px; border-radius: 6px; overflow: hidden; display: none; margin-top: 10px; }
-        .progress-fill { width: 0%; background: #0969da; height: 100%; transition: width 0.2s; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; max-width: 700px; margin: auto; line-height: 1.6; color: #333; background-color: #f8f9fa; }
+        h1 { color: #1a73e8; border-bottom: 2px solid #1a73e8; padding-bottom: 10px; }
+        .version-tag { text-align: right; font-size: 0.8em; color: #777; margin-bottom: 20px; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px;}
+        #drop_zone { border: 2px dashed #1a73e8; border-radius: 10px; padding: 50px 20px; text-align: center; background: #fff; cursor: pointer; transition: 0.2s; }
+        #drop_zone:hover { background: #f1f3f4; border-color: #174ea6; }
+        #status { font-weight: bold; margin: 15px 0; text-align: center; }
+        .error { color: #d93025; }
+        .success { color: #1e8e3e; }
+        button { background-color: #1a73e8; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%; padding: 15px; font-size: 16px; font-weight: bold; }
+        button:hover { background-color: #174ea6; }
+        button:disabled { background-color: #dadce0; cursor: not-allowed; }
+        #download_link { display: none; text-align: center; background-color: #1e8e3e; color: white; padding: 15px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 15px; }
+        .progress-bar { width: 100%; background: #eee; height: 8px; border-radius: 4px; overflow: hidden; display: none; margin-top: 15px; }
+        .progress-fill { width: 0%; background: #1a73e8; height: 100%; transition: width 0.1s; }
+        input[type="number"] { width: 60px; padding: 8px; border: 1px solid #dadce0; border-radius: 4px; }
     </style>
 </head>
 <body>
 
     <h1>✂️ PDF分割ツール</h1>
-    <div class="version-tag">Ver 1.09 (大容量対応・JSエンジン搭載版)</div>
+    <div class="version-tag">Version 1.10 (High Speed Engine)</div>
 
     <div class="card">
-        <h3>1. ファイルを選択</h3>
-        <p style="font-size: 0.85em; color: #666;">メモリ効率を最大化しました。数百MB以上のファイルでもブラウザの限界まで処理可能です。</p>
-        <div id="drop_zone">📄 ここにPDFをドロップ または クリック</div>
+        <h3>1. ファイルの読み込み</h3>
+        <p style="font-size: 0.85em; color: #5f6368;">※1GBまでの大容量ファイルをサポート。ブラウザ内のみで完結するため安全です。</p>
+        <div id="drop_zone">📂 ここにPDFをドロップ または クリックして選択</div>
         <input type="file" id="file_input" accept="application/pdf" style="display: none;">
-        <div id="file_info" style="margin-top:15px; font-weight:bold; color: #0969da;"></div>
+        <div id="file_info" style="margin-top:15px; font-weight:bold; color: #1a73e8;"></div>
         <div id="status"></div>
         <div class="progress-bar" id="p_bar"><div class="progress-fill" id="p_fill"></div></div>
     </div>
 
-    <div class="card" id="step2_area" style="display: none;">
-        <h3>2. 分割設定</h3>
-        <p>分割数: <input type="number" id="num_splits" value="2" min="2" max="100" style="width:60px; padding:5px;"></p>
-        <div id="split_points_container" style="margin: 15px 0; font-size: 0.9em; background: #f8f9fa; padding: 10px; border-radius: 8px;"></div>
-        <button id="split_btn">分割処理を開始（ZIP保存）</button>
-        <a id="download_link">⬇️ ZIPファイルを保存</a>
+    <div id="step2_area" class="card" style="display: none;">
+        <h3>2. 分割の設定</h3>
+        <p>何分割にしますか？: <input type="number" id="num_splits" value="2" min="2" max="100"></p>
+        <div id="split_points_container" style="margin: 15px 0; font-size: 0.9em; background: #f1f3f4; padding: 15px; border-radius: 8px;"></div>
+        <button id="split_btn">分割処理を実行してZIP保存</button>
+        <a id="download_link">⬇️ 生成されたファイルをダウンロード</a>
     </div>
 
     <script>
-        // 大容量対応のため、メイン処理をJavaScript(PDF-LIB)で記述
-        let currentPdfArrayBuffer = null;
-        let fileName = "";
+        let pdfData = null;
+        let originalFileName = "";
 
-        const dropZone = document.getElementById('drop_zone');
         const fileInput = document.getElementById('file_input');
+        const dropZone = document.getElementById('drop_zone');
         const status = document.getElementById('status');
         const fileInfo = document.getElementById('file_info');
         const step2Area = document.getElementById('step2_area');
+        const numSplits = document.getElementById('num_splits');
         const splitBtn = document.getElementById('split_btn');
-        const pBar = document.getElementById('p_bar');
-        const pFill = document.getElementById('p_fill');
 
+        // ① ファイル選択・ドラッグ&ドロップ
         dropZone.onclick = () => fileInput.click();
-        
-        fileInput.onchange = async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            fileName = file.name;
+        dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.backgroundColor = '#e8f0fe'; };
+        dropZone.ondragleave = () => dropZone.style.backgroundColor = '#fff';
+        dropZone.ondrop = (e) => {
+            e.preventDefault();
+            dropZone.style.backgroundColor = '#fff';
+            handleFile(e.dataTransfer.files[0]);
+        };
+        fileInput.onchange = (e) => handleFile(e.target.files[0]);
+
+        async function handleFile(file) {
+            if (!file || file.type !== "application/pdf") return;
+            originalFileName = file.name.replace(".pdf", "");
             status.innerText = "読み込み中...";
+            status.className = "";
             
             try {
-                currentPdfArrayBuffer = await file.arrayBuffer();
-                const pdfDoc = await PDFLib.PDFDocument.load(currentPdfArrayBuffer, { ignoreEncryption: true });
+                pdfData = await file.arrayBuffer();
+                const pdfDoc = await PDFLib.PDFDocument.load(pdfData, { ignoreEncryption: true });
                 const totalPages = pdfDoc.getPageCount();
                 
-                fileInfo.innerText = `📄 ${fileName} (${(file.size/1024/1024).toFixed(1)} MB / ${totalPages} ページ)`;
+                fileInfo.innerText = `📄 ${file.name} (${(file.size/1024/1024).toFixed(1)} MB / ${totalPages} ページ)`;
                 status.innerText = "";
                 step2Area.style.display = "block";
-                updateSplitInputs(totalPages);
+                generateSplitInputs(totalPages);
             } catch (err) {
                 status.innerText = "エラー: PDFの読み込みに失敗しました。";
-                console.error(err);
+                status.className = "error";
             }
-        };
+        }
 
-        function updateSplitInputs(total) {
-            const num = parseInt(document.getElementById('num_splits').value) || 2;
+        // ② 分割設定の自動生成
+        function generateSplitInputs(total) {
+            const num = parseInt(numSplits.value) || 2;
             const container = document.getElementById('split_points_container');
             const step = total / num;
-            let html = "<strong>自動計算された区切り位置:</strong>";
+            let html = "<strong>区切り位置のプレビュー:</strong>";
             for (let i = 1; i < num; i++) {
                 let val = Math.floor(step * i);
-                html += `<div>${i}つ目の区切り: <input type="number" class="split-point" value="${val}" min="1" max="${total-1}" style="width:50px;"> ページの後</div>`;
+                html += `<div>区切り ${i}: <input type="number" class="split-point" value="${val}" min="1" max="${total-1}"> ページ目の後ろ</div>`;
             }
             container.innerHTML = html;
         }
 
-        document.getElementById('num_splits').onchange = () => {
-            const file = fileInput.files[0];
-            if (currentPdfArrayBuffer) {
-                PDFLib.PDFDocument.load(currentPdfArrayBuffer).then(doc => updateSplitInputs(doc.getPageCount()));
+        numSplits.onchange = () => {
+            if (pdfData) {
+                PDFLib.PDFDocument.load(pdfData).then(doc => generateSplitInputs(doc.getPageCount()));
             }
         };
 
+        // ③ 分割実行
         splitBtn.onclick = async () => {
-            status.innerText = "分割・ZIP生成中...";
-            status.style.color = "#0969da";
+            status.innerText = "処理中... ページ数が多い場合は時間がかかります";
+            status.className = "";
             splitBtn.disabled = true;
-            pBar.style.display = "block";
+            document.getElementById('p_bar').style.display = "block";
+            const pFill = document.getElementById('p_fill');
             
             try {
-                const srcDoc = await PDFLib.PDFDocument.load(currentPdfArrayBuffer);
+                const srcDoc = await PDFLib.PDFDocument.load(pdfData);
                 const total = srcDoc.getPageCount();
                 const points = Array.from(document.querySelectorAll('.split-point')).map(el => parseInt(el.value));
                 points.push(total);
@@ -119,8 +131,9 @@
                 
                 for (let i = 0; i < sortedPoints.length; i++) {
                     const end = sortedPoints[i];
+                    if (end <= start) continue;
+
                     const newDoc = await PDFLib.PDFDocument.create();
-                    
                     const indices = [];
                     for (let j = start; j < end; j++) indices.push(j);
                     
@@ -128,35 +141,28 @@
                     copiedPages.forEach(page => newDoc.addPage(page));
                     
                     const pdfBytes = await newDoc.save();
-                    zip.file(`part_${i+1}_p${start+1}-${end}.pdf`, pdfBytes);
+                    zip.file(`${originalFileName}_part${i+1}_p${start+1}-${end}.pdf`, pdfBytes);
                     
                     start = end;
                     pFill.style.width = `${((i+1)/sortedPoints.length)*100}%`;
+                    // ブラウザのフリーズを防ぐための微小な待ち
+                    await new Promise(r => setTimeout(r, 10));
                 }
                 
                 const zipBlob = await zip.generateAsync({ type: "blob" });
                 const dlLink = document.getElementById('download_link');
                 dlLink.href = URL.createObjectURL(zipBlob);
-                dlLink.download = `split_${fileName}.zip`;
+                dlLink.download = `${originalFileName}_split.zip`;
                 dlLink.style.display = "block";
                 status.innerText = "✅ 完了しました！";
-                status.style.color = "#2ea44f";
+                status.className = "success";
             } catch (err) {
-                status.innerText = "処理エラー: メモリ不足の可能性があります。";
+                status.innerText = "エラー: 処理に失敗しました。";
+                status.className = "error";
                 console.error(err);
             } finally {
                 splitBtn.disabled = false;
             }
-        };
-
-        // ドラッグ&ドロップの処理
-        dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.background = '#e8f0fe'; };
-        dropZone.ondragleave = () => dropZone.style.background = '#fff';
-        dropZone.ondrop = (e) => {
-            e.preventDefault();
-            dropZone.style.background = '#fff';
-            fileInput.files = e.dataTransfer.files;
-            fileInput.dispatchEvent(new Event('change'));
         };
     </script>
 </body>
