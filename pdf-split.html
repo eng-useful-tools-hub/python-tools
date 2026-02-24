@@ -2,62 +2,81 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>PDF分割プロ：均等バランスモデル</title>
+    <title>高機能 PDF分割ツール</title>
     <link rel="stylesheet" href="https://pyscript.net/releases/2023.11.1/core.css" />
     <script type="module" src="https://pyscript.net/releases/2023.11.1/core.js"></script>
+    
     <py-config>
         packages = ["pypdf"]
     </py-config>
+
     <style>
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 20px; max-width: 700px; margin: auto; background-color: #f4f7f9; color: #333; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #e1e4e8; }
-        h1 { color: #0969da; text-align: center; margin-bottom: 30px; }
-        #drop_zone { border: 2px dashed #0969da; border-radius: 12px; padding: 40px; text-align: center; background-color: #f0f7ff; cursor: pointer; transition: 0.3s; margin-bottom: 15px; }
-        #drop_zone:hover { border-color: #0550ae; background-color: #e8f2ff; }
-        .mode-switch { display: flex; gap: 10px; margin-bottom: 20px; background: #f1f3f5; padding: 5px; border-radius: 10px; }
-        .mode-switch label { flex: 1; text-align: center; padding: 12px; cursor: pointer; border-radius: 8px; font-weight: bold; transition: 0.2s; }
-        .mode-switch input { display: none; }
-        .mode-switch input:checked + span { background: white; color: #0969da; display: block; border-radius: 6px; padding: 12px; margin: -12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .input-group { margin: 20px 0; padding: 15px; border-left: 5px solid #0969da; background: #f8f9fa; }
-        button { background-color: #0969da; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; padding: 16px; font-size: 16px; box-shadow: 0 4px 12px rgba(9, 105, 218, 0.3); }
-        button:hover { background-color: #0550ae; transform: translateY(-1px); }
-        #download_link { display: none; text-align: center; background-color: #2ea44f; color: white; padding: 15px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 15px; box-shadow: 0 4px 12px rgba(46, 164, 79, 0.3); }
-        #status { color: #d1242f; font-weight: bold; text-align: center; margin-top: 15px; }
-        .info-badge { background: #e7f3ff; color: #0969da; padding: 4px 10px; border-radius: 20px; font-size: 0.85em; margin-right: 5px; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 20px; max-width: 700px; margin: auto; line-height: 1.6; color: #333; background-color: #f0f2f5; }
+        h1 { color: #1a73e8; text-align: center; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px;}
+        
+        /* 注意書きセクションのスタイル */
+        .limit-info { background-color: #fff4e5; border-left: 5px solid #ffa117; padding: 15px; margin-bottom: 20px; font-size: 0.9em; }
+        .limit-info h4 { margin-top: 0; color: #855100; }
+        
+        #drop_zone { border: 2px dashed #1a73e8; border-radius: 10px; padding: 40px 20px; text-align: center; background-color: #f8f9fa; cursor: pointer; transition: 0.3s; }
+        #drop_zone:hover { background-color: #e8f0fe; }
+        
+        .status-msg { font-weight: bold; text-align: center; margin: 15px 0; min-height: 1.5em; }
+        .success { color: #28a745; }
+        .error { color: #d93025; }
+        
+        button { background-color: #1a73e8; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%; padding: 15px; font-size: 16px; font-weight: bold; margin-top: 10px; }
+        button:hover { background-color: #1557b0; }
+        #download_link { display: none; text-align: center; background-color: #34a853; color: white; padding: 15px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 10px; }
+        
+        input[type="number"] { width: 60px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; }
     </style>
 </head>
 <body>
-    <h1>✂️ PDF分割プロ (均等バランス版)</h1>
-    
-    <div class="card">
-        <div id="drop_zone">📂 ファイルをドロップして読み込み</div>
-        <input type="file" id="file_input" accept="application/pdf" style="display: none;" py-change="on_file_loaded">
-        <div id="file_info" style="margin-top:15px; text-align:center;"></div>
-        <div id="status"></div>
+
+    <h1>✂️ PDF分割ツール</h1>
+
+    <div class="limit-info">
+        <h4>📢 ご利用の目安とお知らせ</h4>
+        <ul>
+            <li><strong>処理の限界:</strong> ブラウザのメモリを使用するため、<strong>50MB〜100MB程度</strong>までのファイルを推奨します。</li>
+            <li><strong>プライバシー:</strong> ファイルはサーバーに送信されず、あなたのPC内だけで処理されるため安全です。</li>
+            <li><strong>動作環境:</strong> 100MBを超える巨大なファイルや、メモリの少ないスマートフォンでは動作が不安定になる（ページが消える）場合があります。</li>
+        </ul>
     </div>
 
-    <div id="step2_area" class="card" style="display: none;">
-        <h3>分割設定</h3>
-        <div class="mode-switch">
-            <label><input type="radio" name="mode" value="page" checked py-change="update_ui"><span>📄 ページ数で均等に</span></label>
-            <label><input type="radio" name="mode" value="size" py-change="update_ui"><span>⚖️ 容量(MB)で均等に</span></label>
-        </div>
+    <div class="card">
+        <h3>1. ファイルを読み込む</h3>
+        <div id="drop_zone">📂 ここにPDFをドロップ または クリック</div>
+        <input type="file" id="file_input" accept="application/pdf" style="display: none;" py-change="on_file_loaded">
+        <div id="file_info" style="margin-top:15px; font-weight:bold; color: #1a73e8;"></div>
+        <div id="status" class="status-msg"></div>
+    </div>
 
-        <div id="setting_input_area" class="input-group"></div>
-
-        <div id="preview_area" style="font-size: 0.9em; color: #555; line-height: 1.8;"></div>
-
-        <button id="split_btn" style="margin-top:20px;" py-click="execute_split">この構成で分割を実行</button>
-        <a id="download_link">⬇️ ZIPファイルをダウンロード</a>
+    <div class="card" id="step2_area" style="display: none;">
+        <h3>2. 分割の設定</h3>
+        <p>
+            分割数: <input type="number" id="num_splits" value="2" min="2" max="50" py-change="update_split_inputs"> 分割
+        </p>
+        <div id="split_points_container" style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #eee;"></div>
+        
+        <p class="info-text" style="font-size: 0.85em; color: #666; margin-top: 15px;">
+            ※「実行」を押すとZIPファイルが生成され、「ダウンロード」フォルダに保存されます。
+        </p>
+        <button id="split_btn" py-click="execute_split">PDFを分割して保存</button>
+        <a id="download_link">⬇️ 生成されたZIPを保存する</a>
     </div>
 
     <script>
         const dropZone = document.getElementById('drop_zone');
         const fileInput = document.getElementById('file_input');
         dropZone.addEventListener('click', () => fileInput.click());
-        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); });
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = '#34a853'; });
+        dropZone.addEventListener('dragleave', () => dropZone.style.borderColor = '#1a73e8');
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
+            dropZone.style.borderColor = '#1a73e8';
             if (e.dataTransfer.files.length > 0) {
                 fileInput.files = e.dataTransfer.files;
                 fileInput.dispatchEvent(new Event('change', { bubbles: true }));
@@ -66,111 +85,89 @@
     </script>
 
     <script type="py">
-        import io, math, zipfile
+        import asyncio, io, math, zipfile
         from js import document, Uint8Array, Blob, URL
         from pypdf import PdfReader, PdfWriter
 
-        pdf_bytes = None
+        pdf_mem = None
         total_pages = 0
         file_name = ""
-        original_size_mb = 0
 
         async def on_file_loaded(event):
-            global pdf_bytes, total_pages, file_name, original_size_mb
-            file = document.getElementById("file_input").files.item(0)
-            if not file: return
+            global pdf_mem, total_pages, file_name
+            status = document.getElementById("status")
+            file_input = document.getElementById("file_input")
+            if not file_input.files.length: return
+            
+            file = file_input.files.item(0)
             file_name = file.name
-            original_size_mb = file.size / (1024 * 1024)
+            status.className = "status-msg"
+            status.innerText = "解析中..."
             
-            array_buffer = await file.arrayBuffer()
-            pdf_bytes = bytes(Uint8Array.new(array_buffer))
-            reader = PdfReader(io.BytesIO(pdf_bytes))
-            total_pages = len(reader.pages)
-            
-            document.getElementById("file_info").innerHTML = f"<b>{file_name}</b><br><br><span class='info-badge'>{total_pages}ページ</span><span class='info-badge'>{original_size_mb:.2f} MB</span>"
-            document.getElementById("step2_area").style.display = "block"
-            update_ui(None)
-
-        def update_ui(event):
-            mode = document.querySelector('input[name="mode"]:checked').value
-            area = document.getElementById("setting_input_area")
-            if mode == "page":
-                area.innerHTML = '何分割にしますか？: <input type="number" id="val_input" value="3" min="2" max="'+str(total_pages)+'" style="padding:8px; border-radius:4px; border:1px solid #ccc; width:60px;" py-change="refresh_preview"> つのファイル'
-            else:
-                area.innerHTML = '1ファイルあたり約何MBにしますか？: <input type="number" id="val_input" value="'+str(round(original_size_mb/3, 1))+'" step="0.1" min="0.1" style="padding:8px; border-radius:4px; border:1px solid #ccc; width:70px;" py-change="refresh_preview"> MB'
-            refresh_preview(None)
-
-        def calculate_split_points():
-            mode = document.querySelector('input[name="mode"]:checked').value
-            val = float(document.getElementById("val_input").value or 0.1)
-            points = []
-            
-            if mode == "page":
-                num_files = int(val)
-                step = total_pages / num_files
-                for i in range(1, num_files):
-                    points.append(math.floor(step * i))
-            else:
-                # 容量均等化ロジック
-                num_files = math.ceil(original_size_mb / val)
-                if num_files < 2: num_files = 2
-                target_size_per_file = original_size_mb / num_files
-                page_avg = original_size_mb / total_pages
+            try:
+                buf = await file.arrayBuffer()
+                pdf_mem = io.BytesIO(bytes(Uint8Array.new(buf)))
+                reader = PdfReader(pdf_mem)
+                total_pages = len(reader.pages)
                 
-                for i in range(1, num_files):
-                    # 理想的な累積容量に最も近いページ番号を計算
-                    target_cum_size = target_size_per_file * i
-                    best_page = round(target_cum_size / page_avg)
-                    if best_page < 1: best_page = 1
-                    if best_page >= total_pages: break
-                    points.append(best_page)
-            
-            return sorted(list(set(points)))
+                size_mb = file.size / (1024 * 1024)
+                document.getElementById("file_info").innerText = f"📄 {file_name} ({size_mb:.1f} MB / {total_pages} ページ)"
+                
+                if size_mb > 100:
+                    status.innerHTML = '<span class="error">⚠️ 100MBを超えています。動作が不安定になる可能性があります。</span>'
+                else:
+                    status.innerText = ""
+                
+                document.getElementById("step2_area").style.display = "block"
+                update_split_inputs(None)
+            except Exception as e:
+                status.innerHTML = '<span class="error">読み込みに失敗しました。ファイルが壊れているか、メモリ不足です。</span>'
 
-        def refresh_preview(event):
-            points = calculate_split_points()
-            preview = document.getElementById("preview_area")
-            
-            lines = []
-            start = 1
-            for i, p in enumerate(points):
-                lines.append(f"ファイル {i+1}: {start}～{p} ページ")
-                start = p + 1
-            lines.append(f"ファイル {len(points)+1}: {start}～{total_pages} ページ")
-            
-            preview.innerHTML = "<b>分割の構成予定:</b><br>" + "<br>".join(lines)
+        def update_split_inputs(event):
+            num = int(document.getElementById("num_splits").value or 2)
+            container = document.getElementById("split_points_container")
+            if num < 2 or num > total_pages:
+                container.innerHTML = "分割数が正しくありません。"
+                return
+            html = "<strong>区切るページ位置:</strong><br>"
+            step = total_pages / num
+            for i in range(1, num):
+                val = math.floor(step * i)
+                html += f"<div>{i}つ目の区切り: <input type='number' class='split-point' value='{val}' min='1' max='{total_pages-1}'> ページ目の直後</div>"
+            container.innerHTML = html
 
         async def execute_split(event):
             status = document.getElementById("status")
-            status.innerText = "最適化分割を実行中..."
-            document.getElementById("download_link").style.display = "none"
+            status.innerText = "処理中... しばらくお待ちください。"
+            dl_link = document.getElementById("download_link")
+            dl_link.style.display = "none"
             
             try:
-                points = calculate_split_points()
-                reader = PdfReader(io.BytesIO(pdf_bytes))
-                zip_buffer = io.BytesIO()
+                await asyncio.sleep(0.1)
+                reader = PdfReader(pdf_mem)
+                points = sorted(list(set([int(el.value) for el in document.querySelectorAll(".split-point")])))
+                points.append(total_pages)
                 
-                with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED) as zf:
+                zip_buf = io.BytesIO()
+                with zipfile.ZipFile(zip_buf, "w") as zf:
                     start = 0
-                    for i, p in enumerate(points + [total_pages]):
-                        if start >= total_pages: break
+                    for i, end in enumerate(points):
+                        if end <= start: continue
                         writer = PdfWriter()
-                        for page_idx in range(start, p):
-                            writer.add_page(reader.pages[page_idx])
-                        
-                        out = io.BytesIO()
-                        writer.write(out)
-                        zf.writestr(f"part_{i+1}_{start+1}-{p}page.pdf", out.getvalue())
-                        start = p
+                        for p in range(start, end):
+                            writer.add_page(reader.pages[p])
+                        out_pdf = io.BytesIO()
+                        writer.write(out_pdf)
+                        zf.writestr(f"part_{i+1}_p{start+1}-{end}.pdf", out_pdf.getvalue())
+                        start = end
                 
-                blob = Blob.new([Uint8Array.new(zip_buffer.getvalue())], type="application/zip")
-                link = document.getElementById("download_link")
-                link.href = URL.createObjectURL(blob)
-                link.download = f"balanced_split_{file_name.replace('.pdf', '')}.zip"
-                link.style.display = "block"
-                status.innerText = "✅ 均等分割が完了しました！"
+                blob = Blob.new([Uint8Array.new(zip_buf.getvalue())], type="application/zip")
+                dl_link.href = URL.createObjectURL(blob)
+                dl_link.download = f"split_{file_name}.zip"
+                dl_link.style.display = "block"
+                status.innerHTML = '<span class="success">✅ 分割が完了しました！</span>'
             except Exception as e:
-                status.innerText = f"エラー: {e}"
+                status.innerHTML = '<span class="error">処理中にエラーが発生しました。</span>'
     </script>
 </body>
 </html>
