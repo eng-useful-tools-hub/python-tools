@@ -14,7 +14,6 @@
         body { font-family: sans-serif; padding: 20px; max-width: 650px; margin: auto; line-height: 1.6; color: #333; }
         .card { background: #f6f8fa; padding: 25px; border-radius: 8px; border: 1px solid #d0d7de; margin-bottom: 20px;}
         
-        /* ドラッグ＆ドロップのエリア */
         #drop_zone { border: 2px dashed #0969da; border-radius: 10px; padding: 40px 20px; text-align: center; background-color: #fff; cursor: pointer; transition: background-color 0.2s; margin-bottom: 15px; }
         #drop_zone.dragover { background-color: #e1e4e8; }
         
@@ -39,7 +38,7 @@
         <div id="drop_zone">
             📂 ここにPDFファイルをドラッグ＆ドロップ<br>またはクリックしてファイルを選択
         </div>
-        <input type="file" id="file_input" accept="application/pdf" style="display: none;">
+        <input type="file" id="file_input" accept="application/pdf" style="display: none;" py-change="on_file_loaded">
         
         <div id="file_info"></div>
         <div id="status"></div>
@@ -48,11 +47,11 @@
     <div class="card" id="step2_area" style="display: none;">
         <h3>Step 2: 分割設定</h3>
         <label>③ 何分割にしますか？: 
-            <input type="number" id="num_splits" value="2" min="2" max="20"> 分割
+            <input type="number" id="num_splits" value="2" min="2" max="20" py-change="update_split_inputs"> 分割
         </label>
         
         <div id="split_points_container" style="margin-top: 15px; padding: 15px; background: #fff; border: 1px solid #ddd; border-radius: 5px;">
-            </div>
+        </div>
 
         <div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ccc;">
             <p style="font-weight: bold;">⑤ 保存先の確認</p>
@@ -78,8 +77,8 @@
             dropZone.classList.remove('dragover');
             if (e.dataTransfer.files.length > 0) {
                 fileInput.files = e.dataTransfer.files;
-                // ファイルが選択されたことをPythonに知らせる
-                fileInput.dispatchEvent(new Event('change'));
+                // 修正箇所：PyScriptが認識できるようにイベントを発火させます
+                fileInput.dispatchEvent(new Event('change', { bubbles: true }));
             }
         });
     </script>
@@ -92,18 +91,15 @@
         from js import document, Uint8Array, Blob, URL
         from pypdf import PdfReader, PdfWriter
 
-        # グローバル変数
         pdf_bytes = None
         total_pages = 0
         file_name = ""
 
-        # ファイルサイズを分かりやすく表示する関数
         def format_size(size_in_bytes):
             if size_in_bytes < 1024 * 1024:
                 return f"{size_in_bytes / 1024:.1f} KB"
             return f"{size_in_bytes / (1024 * 1024):.2f} MB"
 
-        # ファイルが読み込まれた時の処理
         async def on_file_loaded(event):
             global pdf_bytes, total_pages, file_name
             status_text = document.getElementById("status")
@@ -120,28 +116,23 @@
             document.getElementById("download_link").style.display = "none"
             
             try:
-                # データをPythonで扱える形式に変換
                 array_buffer = await file.arrayBuffer()
                 js_array = Uint8Array.new(array_buffer)
                 pdf_bytes = bytes(js_array)
                 
-                # PDFのページ数を取得
                 reader = PdfReader(io.BytesIO(pdf_bytes))
                 total_pages = len(reader.pages)
                 
-                # ② サイズとページ数を画面に出力
                 info_text = f"📄 {file_name} (サイズ: {format_size(file.size)} / 全 {total_pages} ページ)"
                 document.getElementById("file_info").innerText = info_text
                 status_text.innerText = ""
                 
-                # Step 2のエリアを表示して、デフォルトの分割ページを計算
                 document.getElementById("step2_area").style.display = "block"
                 update_split_inputs(None)
                 
             except Exception as e:
-                status_text.innerText = "エラー: PDFの読み込みに失敗しました。"
+                status_text.innerText = f"エラー: PDFの読み込みに失敗しました。詳細: {str(e)}"
 
-        # ④ 分割ページを自動計算して画面に表示する関数
         def update_split_inputs(event):
             num_splits_str = document.getElementById("num_splits").value
             if not num_splits_str: return
@@ -156,7 +147,6 @@
                 container.innerHTML = "<p style='color:red;'>総ページ数以上の分割はできません。</p>"
                 return
 
-            # 等分のページ数を計算
             html = "<p class='info-text'>④ 以下のページの「直後」でファイルを区切ります。<br>（必要に応じて数字を書き換えて調整できます）</p>"
             step = total_pages / num_splits
             
@@ -166,11 +156,6 @@
             
             container.innerHTML = html
 
-        # イベントリスナーの登録（ファイル選択時、分割数変更時）
-        document.getElementById("file_input").addEventListener("change", on_file_loaded)
-        document.getElementById("num_splits").addEventListener("change", update_split_inputs)
-
-        # 実行ボタンが押された時の処理
         async def execute_split(event):
             status_text = document.getElementById("status")
             status_text.innerText = "分割・圧縮処理中...（少しお待ちください）"
@@ -180,43 +165,35 @@
                 num_splits = int(document.getElementById("num_splits").value)
                 split_inputs = document.querySelectorAll(".split-point")
                 
-                # ユーザーが指定した区切りページを取得
                 breakpoints = []
                 for inp in split_inputs:
                     breakpoints.append(int(inp.value))
                 
-                # エラーチェック
                 if any(p < 1 or p >= total_pages for p in breakpoints):
                     status_text.innerText = "エラー: 存在しないページが指定されています。"
                     return
 
                 reader = PdfReader(io.BytesIO(pdf_bytes))
-                
-                # メモリ上にZIPファイルを作成
                 zip_buffer = io.BytesIO()
                 base_name = file_name.replace(".pdf", "")
                 
                 with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
                     start_p = 0
                     for i in range(num_splits):
-                        # 区切るページの決定
                         end_p = breakpoints[i] if i < len(breakpoints) else total_pages
                         
                         writer = PdfWriter()
                         for p in range(start_p, end_p):
                             writer.add_page(reader.pages[p])
                         
-                        # 個別のPDFをメモリ上に作成
                         pdf_out = io.BytesIO()
                         writer.write(pdf_out)
                         
-                        # ZIPの中に追加
                         part_name = f"{base_name}_part{i+1} ({start_p+1}-{end_p}page).pdf"
                         zip_file.writestr(part_name, pdf_out.getvalue())
                         
                         start_p = end_p
                 
-                # ダウンロードリンクの生成
                 zip_bytes = zip_buffer.getvalue()
                 js_array_out = Uint8Array.new(len(zip_bytes))
                 js_array_out.assign(zip_bytes)
@@ -228,7 +205,7 @@
                 dl_link.download = f"{base_name}_split.zip"
                 dl_link.style.display = "block"
                 
-                status_text.innerText = "✅ 完了しました！"
+                status_text.innerText = "✅ 完了しました！下のボタンからZIPファイルを保存してください。"
                 
             except Exception as e:
                 status_text.innerText = f"エラーが発生しました: {str(e)}"
