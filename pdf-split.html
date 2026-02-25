@@ -2,37 +2,52 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>PDF分割ツール v1.15 (1GB対応・省メモリ版)</title>
+    <title>PDF分割ツール v1.16</title>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; max-width: 750px; margin: auto; line-height: 1.6; color: #333; background-color: #f0f2f5; }
-        h1 { color: #1a73e8; border-bottom: 2px solid #1a73e8; padding-bottom: 10px; }
+        h1 { color: #1a73e8; border-bottom: 2px solid #1a73e8; padding-bottom: 10px; margin-bottom: 5px; }
         .version-tag { text-align: right; font-size: 0.8em; color: #777; margin-bottom: 20px; }
         .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px;}
-        .warning-box { background-color: #fff4e5; border-left: 5px solid #ffa117; padding: 15px; margin-bottom: 20px; font-size: 0.85em; }
-        #drop_zone { border: 2px dashed #1a73e8; border-radius: 10px; padding: 50px 20px; text-align: center; background: #fff; cursor: pointer; transition: 0.2s; }
+        
+        /* 注意書きエリア */
+        .limit-notice { background-color: #fff4e5; border-left: 5px solid #ffa117; padding: 15px; margin-bottom: 20px; font-size: 0.9em; }
+        .limit-notice b { color: #d93025; }
+
+        #drop_zone { border: 2px dashed #1a73e8; border-radius: 10px; padding: 40px 20px; text-align: center; background: #fff; cursor: pointer; transition: 0.2s; }
         #drop_zone:hover { background: #f1f3f4; }
+        
+        /* モード切替スイッチ */
+        .mode-selector { display: flex; gap: 10px; margin-bottom: 20px; }
+        .mode-btn { flex: 1; padding: 12px; border: 2px solid #dadce0; border-radius: 8px; cursor: pointer; background: white; font-weight: bold; transition: 0.2s; }
+        .mode-btn.active { border-color: #1a73e8; background: #e8f0fe; color: #1a73e8; }
+
         #status { font-weight: bold; margin: 15px 0; text-align: center; }
-        .success { color: #1e8e3e; }
         .error { color: #d93025; }
+        .success { color: #1e8e3e; }
+
         button#split_btn { background-color: #1a73e8; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%; padding: 15px; font-size: 16px; font-weight: bold; }
         button#split_btn:disabled { background-color: #dadce0; }
-        .progress-bar { width: 100%; background: #eee; height: 15px; border-radius: 8px; overflow: hidden; display: none; margin-top: 15px; }
+
+        .progress-bar { width: 100%; background: #eee; height: 15px; border-radius: 8px; overflow: hidden; display: none; margin-top: 15px; border: 1px solid #ddd; }
         .progress-fill { width: 0%; background: #1a73e8; height: 100%; transition: width 0.1s; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; }
-        .split-point-item { margin: 8px 0; display: flex; align-items: center; gap: 10px; }
-        input[type="number"] { width: 70px; padding: 6px; border: 1px solid #dadce0; border-radius: 4px; }
+
+        .input-group { margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 8px; }
+        input[type="number"] { width: 75px; padding: 8px; border: 1px solid #dadce0; border-radius: 4px; }
+        .split-point-item { margin: 8px 0; display: flex; align-items: center; gap: 10px; font-size: 0.9em; }
     </style>
 </head>
 <body>
 
     <h1>✂️ PDF分割ツール</h1>
-    <div class="version-tag">Version 1.15 (Memory Optimized / Sequential Download)</div>
+    <div class="version-tag">Version 1.16 (200MB Limit / Multi-Mode)</div>
 
-    <div class="warning-box">
-        <strong>⚠️ 実行前の重要設定（大容量ファイルの場合）</strong><br>
-        ブラウザの設定で<strong>「ダウンロード前に各ファイルの保存場所を確認する」をオフ</strong>にしてください。<br>
-        ※ZIP化を廃止し、メモリ消費を抑えるためにファイルを1つずつ自動保存する方式を採用しています。
+    <div class="limit-notice">
+        <strong>【ご利用上の注意】</strong><br>
+        ・本ツールはブラウザのメモリを使用するため、処理できる最大容量は<b>約200MBまで</b>となります。<br>
+        ・200MBを超えるファイルはエラーや強制終了の可能性があるため、PC版プログラムをご利用ください。<br>
+        ・保存場所の確認ダイアログが連続で出ないよう、ブラウザの「保存先を確認する」設定はオフを推奨します。
     </div>
 
     <div class="card">
@@ -45,15 +60,29 @@
     </div>
 
     <div id="step2_area" class="card" style="display: none;">
-        <h3>2. 分割の実行</h3>
-        <div class="input-group">
-            分割後の数: <input type="number" id="num_splits" value="2" min="2" max="100"> 個
-        </div>
-        <div id="split_points_container" style="margin: 15px 0; font-size: 0.9em; background: #f8f9fa; padding: 15px; border-radius: 8px;"></div>
+        <h3>2. 分割方法の選択</h3>
         
-        <button id="split_btn">分割して順次保存を開始する</button>
+        <div class="mode-selector">
+            <button class="mode-btn active" id="mode_page">ページ指定で分割</button>
+            <button class="mode-btn" id="mode_size">容量(MB)で分割</button>
+        </div>
+
+        <div id="page_setting" class="input-group">
+            分割後のファイル数: <input type="number" id="num_splits" value="2" min="2" max="100"> 個
+            <div id="split_points_container" style="margin-top:15px; padding-top:10px; border-top: 1px solid #eee;">
+                </div>
+        </div>
+
+        <div id="size_setting" class="input-group" style="display: none;">
+            1ファイルあたりの上限サイズ: <input type="number" id="size_limit" value="20" min="1"> MB
+            <p style="font-size: 0.8em; color: #666; margin-top: 10px;">
+                ※ファイルの総量から計算し、指定MBに収まるよう自動分割します。
+            </p>
+        </div>
+        
+        <button id="split_btn">分割処理を開始する</button>
         <p id="finish_msg" style="display:none; text-align:center; color:#1e8e3e; font-weight:bold; margin-top:10px;">
-            全てのファイルの保存処理が完了しました。
+            全ての分割ファイルの保存処理が完了しました。
         </p>
     </div>
 
@@ -61,6 +90,8 @@
         let pdfData = null;
         let originalFileName = "";
         let totalPages = 0;
+        let totalFileSize = 0;
+        let splitMode = 'page'; // 'page' or 'size'
 
         const fileInput = document.getElementById('file_input');
         const dropZone = document.getElementById('drop_zone');
@@ -72,25 +103,36 @@
         const pBar = document.getElementById('p_bar');
         const pFill = document.getElementById('p_fill');
 
+        // ① ファイル読み込みとサイズチェック
         dropZone.onclick = () => fileInput.click();
         fileInput.onchange = (e) => handleFile(e.target.files[0]);
+        dropZone.ondrop = (e) => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); };
         dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.backgroundColor = '#e8f0fe'; };
         dropZone.ondragleave = () => dropZone.style.backgroundColor = '#fff';
-        dropZone.ondrop = (e) => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); };
 
         async function handleFile(file) {
             if (!file || file.type !== "application/pdf") return;
+
+            const MAX_SIZE = 200 * 1024 * 1024; // 200MB
+            if (file.size > MAX_SIZE) {
+                status.innerHTML = `<span class="error">❌ サイズ超過: ${(file.size/1024/1024).toFixed(1)}MB</span><br>200MB以下のファイルを選択してください。`;
+                fileInfo.innerText = "";
+                step2Area.style.display = "none";
+                return;
+            }
+
             originalFileName = file.name.replace(".pdf", "");
-            
+            totalFileSize = file.size;
             pBar.style.display = "block";
             status.innerText = "ファイルを読み込み中...";
-            
+            status.className = "";
+
             const reader = new FileReader();
             reader.onprogress = (e) => {
                 if (e.lengthComputable) {
                     const percent = Math.round((e.loaded / e.total) * 100);
                     pFill.style.width = percent + "%";
-                    pFill.innerText = `読み込み: ${percent}%`;
+                    pFill.innerText = `読込: ${percent}%`;
                 }
             };
 
@@ -99,85 +141,104 @@
                     pdfData = e.target.result;
                     const pdfDoc = await PDFLib.PDFDocument.load(pdfData, { ignoreEncryption: true });
                     totalPages = pdfDoc.getPageCount();
-                    fileInfo.innerText = `📄 ${file.name} (${(file.size/1024/1024).toFixed(1)} MB / ${totalPages} P)`;
+                    fileInfo.innerText = `📄 ${file.name} (${(totalFileSize/1024/1024).toFixed(1)} MB / ${totalPages} ページ)`;
                     status.innerText = "読み込み完了";
+                    status.className = "success";
                     step2Area.style.display = "block";
                     updateSplitUI();
                 } catch (err) {
-                    status.innerText = "読み込みエラー。ファイルが大きすぎる可能性があります。";
-                    console.error(err);
+                    status.innerText = "PDFの解析に失敗しました。";
+                    status.className = "error";
                 }
             };
             reader.readAsArrayBuffer(file);
         }
 
+        // ② モード切替処理
+        document.getElementById('mode_page').onclick = () => {
+            splitMode = 'page';
+            document.getElementById('mode_page').classList.add('active');
+            document.getElementById('mode_size').classList.remove('active');
+            document.getElementById('page_setting').style.display = 'block';
+            document.getElementById('size_setting').style.display = 'none';
+        };
+
+        document.getElementById('mode_size').onclick = () => {
+            splitMode = 'size';
+            document.getElementById('mode_size').classList.add('active');
+            document.getElementById('mode_page').classList.remove('active');
+            document.getElementById('size_setting').style.display = 'block';
+            document.getElementById('page_setting').style.display = 'none';
+        };
+
+        // ③ ページ指定UIの自動生成
         function updateSplitUI() {
+            if (splitMode !== 'page') return;
             const num = parseInt(numSplits.value) || 2;
             const container = document.getElementById('split_points_container');
             const step = Math.ceil(totalPages / num);
-            let html = "<strong>分割ページ（手動調整可）:</strong>";
+            let html = "<strong>分割位置の確認・調整:</strong>";
             for (let i = 1; i < num; i++) {
                 let val = Math.floor(step * i);
-                html += `<div class="split-point-item">${i}つ目の区切り: <input type="number" class="split-point" value="${val}" min="1" max="${totalPages-1}"> ページの後</div>`;
+                html += `<div class="split-point-item">区切り ${i}: <input type="number" class="split-point" value="${val}" min="1" max="${totalPages-1}"> ページ目の後ろ</div>`;
             }
             container.innerHTML = html;
         }
-
         numSplits.oninput = updateSplitUI;
 
+        // ④ 分割実行（省メモリ・順次ダウンロード方式）
         splitBtn.onclick = async () => {
             splitBtn.disabled = true;
             document.getElementById('finish_msg').style.display = "none";
-            status.innerText = "分割処理中... ブラウザを閉じないでください";
+            status.innerText = "処理中...";
             
             try {
-                // 元ドキュメントを読み込み（メモリ節約のため一度だけロード）
                 const srcDoc = await PDFLib.PDFDocument.load(pdfData);
-                const inputs = Array.from(document.querySelectorAll('.split-point')).map(el => parseInt(el.value));
-                const points = [0, ...new Set(inputs.filter(v => v > 0 && v < totalPages)), totalPages].sort((a,b) => a-b);
-                
-                for (let i = 0; i < points.length - 1; i++) {
-                    const start = points[i];
-                    const end = points[i+1];
-                    
+                let ranges = [];
+
+                if (splitMode === 'page') {
+                    const inputs = Array.from(document.querySelectorAll('.split-point')).map(el => parseInt(el.value));
+                    const points = [0, ...new Set(inputs.filter(v => v > 0 && v < totalPages)), totalPages].sort((a,b) => a-b);
+                    for (let i = 0; i < points.length - 1; i++) {
+                        ranges.push({ start: points[i], end: points[i+1] });
+                    }
+                } else {
+                    const limitMB = parseInt(document.getElementById('size_limit').value);
+                    const pagesPerFile = Math.max(1, Math.floor((limitMB * 1024 * 1024) / (totalFileSize / totalPages)));
+                    for (let i = 0; i < totalPages; i += pagesPerFile) {
+                        ranges.push({ start: i, end: Math.min(i + pagesPerFile, totalPages) });
+                    }
+                }
+
+                for (let i = 0; i < ranges.length; i++) {
+                    const { start, end } = ranges[i];
                     const newDoc = await PDFLib.PDFDocument.create();
                     const indices = Array.from({length: end - start}, (_, k) => start + k);
                     const copiedPages = await newDoc.copyPages(srcDoc, indices);
                     copiedPages.forEach(p => newDoc.addPage(p));
                     
-                    // PDF生成
                     const pdfBytes = await newDoc.save();
-                    
-                    // 【重要】生成したら即座にダウンロードへ流し、メモリから消す準備をする
                     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
                     const url = URL.createObjectURL(blob);
                     
                     const a = document.createElement('a');
                     a.href = url;
                     a.download = `${originalFileName}_part${i+1}_p${start+1}-${end}.pdf`;
-                    document.body.appendChild(a);
                     a.click();
                     
-                    // 後片付け
-                    setTimeout(() => {
-                        URL.revokeObjectURL(url);
-                        document.body.removeChild(a);
-                    }, 100);
+                    setTimeout(() => URL.revokeObjectURL(url), 500);
 
-                    // 進捗更新
-                    const percent = Math.round(((i+1)/(points.length-1))*100);
+                    const percent = Math.round(((i+1)/ranges.length)*100);
                     pFill.style.width = percent + "%";
-                    pFill.innerText = `保存中: ${percent}% (${i+1}/${points.length-1})`;
-                    
-                    // ブラウザにメモリ解放の時間を与えるための「待ち」
-                    await new Promise(r => setTimeout(r, 300));
+                    pFill.innerText = `保存中: ${percent}%`;
+                    await new Promise(r => setTimeout(r, 400));
                 }
                 
-                status.innerText = "処理完了";
+                status.innerText = "✅ 全ての分割が完了しました。";
                 document.getElementById('finish_msg').style.display = "block";
             } catch (err) {
-                status.innerText = "メモリ不足により処理が中断されました。";
-                console.error(err);
+                status.innerText = "エラー: メモリ不足または処理に失敗しました。";
+                status.className = "error";
             } finally {
                 splitBtn.disabled = false;
             }
