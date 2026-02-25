@@ -2,9 +2,10 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Image to Scan PDF - Ver 1.16</title>
-    <script src="https://unpkg.com/tesseract.js@v4.0.1/dist/tesseract.min.js"></script>
+    <title>Image to Scan PDF - Ver 1.17</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     
     <style>
         :root { --primary: #2563eb; --bg: #f8fafc; }
@@ -12,25 +13,19 @@
         .sidebar { width: 260px; background: white; border-right: 1px solid #e2e8f0; position: fixed; height: 100vh; }
         .main-content { flex: 1; margin-left: 260px; padding: 40px; }
         .container { max-width: 800px; margin: 0 auto; position: relative; }
-        .version { position: absolute; top: 0; right: 0; font-size: 0.8rem; font-weight: bold; color: #64748b; }
-        
         .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; margin-bottom: 20px; }
         .control-group { display: flex; gap: 20px; margin-bottom: 20px; }
         .control-item { flex: 1; }
         select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; margin-top: 5px; }
+        
+        /* クロップエリアの調整 */
+        .crop-container { width: 100%; max-height: 500px; background: #333; border-radius: 8px; overflow: hidden; display: none; margin-top: 20px; }
+        img { max-width: 100%; }
 
         .drop-zone { border: 2px dashed #3b82f6; padding: 40px; text-align: center; border-radius: 12px; cursor: pointer; background: #f0f7ff; }
-        
-        .preview-area { display: none; margin-top: 20px; }
-        .canvas-container { background: #334155; padding: 20px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; }
-        canvas { max-width: 100%; height: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        
-        .rotate-bar { margin-top: 15px; display: flex; gap: 10px; }
-        .r-btn { background: #475569; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .r-btn:hover { background: #1e293b; }
-
-        .btn-save { background: #2563eb; color: white; border: none; padding: 20px; border-radius: 10px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1.2rem; margin-top: 25px; }
+        .btn-save { background: #059669; color: white; border: none; padding: 20px; border-radius: 10px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1.2rem; margin-top: 25px; display: none; }
         #log { font-size: 0.95rem; color: #2563eb; font-weight: bold; margin: 15px 0; }
+        .hint { font-size: 0.85rem; color: #64748b; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -39,8 +34,8 @@
 
 <main class="main-content">
     <div class="container">
-        <div class="version">Ver 1.16</div>
-        <h2>🖼️ Scan PDF Converter</h2>
+        <div class="version" style="text-align:right; font-size:0.8rem; color:#64748b;">Ver 1.17</div>
+        <h2>🖼️ Scan PDF Cropper</h2>
 
         <div class="card">
             <div class="control-group">
@@ -63,125 +58,84 @@
 
             <div class="drop-zone" id="drop-zone">
                 <div style="font-size: 40px;">📸</div>
-                <strong>画像をドロップ</strong>
-                <input type="file" id="file-input" accept="image/*" style="display:none;">
+                <strong>画像をアップロード</strong>
             </div>
+            <input type="file" id="file-input" accept="image/*" style="display:none;">
             <div id="log"></div>
         </div>
 
-        <div id="preview-area" class="card preview-area">
-            <h3>PDF 出力イメージ</h3>
-            <div class="canvas-container">
-                <canvas id="main-canvas"></canvas>
-                <div class="rotate-bar">
-                    <button class="r-btn" onclick="adjustRotate(90)">↻ 右90°</button>
-                    <button class="r-btn" onclick="adjustRotate(180)">↕ 180°反転</button>
-                    <button class="r-btn" onclick="adjustRotate(-90)">↺ 左90°</button>
-                </div>
+        <div id="edit-area" class="card" style="display:none;">
+            <h3>書類の範囲を選択</h3>
+            <p class="hint">枠の角をドラッグして、書類の端に合わせてください（余白をカットします）</p>
+            <div class="crop-container">
+                <img id="image-to-crop">
             </div>
-            <button class="btn-save" id="save-pdf">このサイズ・向きでPDF保存</button>
+            <button class="btn-save" id="generate-pdf">選択した範囲をB4 PDFにする</button>
         </div>
     </div>
 </main>
 
 <script>
+    let cropper = null;
     const paperMap = { a4: [210, 297], a3: [297, 420], b4: [250, 353] };
-    let currentImg = null;
-    let currentRotation = 0; // 合計回転角度
 
     fetch('sidebar.html').then(res => res.text()).then(data => {
         document.getElementById('common-sidebar').innerHTML = data;
     });
 
     const fileInput = document.getElementById('file-input');
-    document.getElementById('drop-zone').onclick = () => fileInput.click();
-    fileInput.onchange = (e) => startProcess(e.target.files[0]);
+    const dropZone = document.getElementById('drop-zone');
+    const imgEl = document.getElementById('image-to-crop');
 
-    function log(msg) { document.getElementById('log').innerText = msg; }
+    dropZone.onclick = () => fileInput.click();
+    fileInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                if (cropper) cropper.destroy();
+                imgEl.src = event.target.result;
+                document.getElementById('edit-area').style.display = 'block';
+                document.querySelector('.crop-container').style.display = 'block';
+                document.getElementById('generate-pdf').style.display = 'block';
+                
+                // Cropper初期化
+                cropper = new Cropper(imgEl, {
+                    autoCropArea: 0.8, // 最初は少し余裕を持って囲む
+                    movable: true,
+                    zoomable: true,
+                    rotatable: true,
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
-    async function startProcess(file) {
-        if(!file) return;
-        log("⌛ 解析中...");
-        
-        currentImg = await new Promise(res => {
-            const r = new FileReader();
-            r.onload = e => { const i = new Image(); i.onload = () => res(i); i.src = e.target.result; };
-            r.readAsDataURL(file);
-        });
-
-        // OCRによる自動向き判定
-        const worker = await Tesseract.createWorker();
-        await worker.loadLanguage('jpn+eng');
-        await worker.initialize('jpn+eng');
-        const { data } = await worker.detect(currentImg);
-        await worker.terminate();
-        
-        // AIの判定を初期値にする
-        currentRotation = data.orientation_degrees || 0;
-        render();
-    }
-
-    function adjustRotate(deg) {
-        currentRotation = (currentRotation + deg) % 360;
-        render();
-    }
-
-    function render() {
-        if(!currentImg) return;
+    document.getElementById('generate-pdf').onclick = () => {
+        if (!cropper) return;
 
         const sizeKey = document.getElementById('paper-size').value;
         const orient = document.getElementById('paper-orientation').value;
         let [pW, pH] = paperMap[sizeKey];
         if (orient === 'l') [pW, pH] = [pH, pW];
 
-        const canvas = document.getElementById('main-canvas');
-        const ctx = canvas.getContext('2d');
+        // 高画質で切り抜き画像を取得
+        const canvas = cropper.getCroppedCanvas({
+            width: pW * 4, // B4なら約3000px以上の高解像度
+            fillColor: '#fff',
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high',
+        });
 
-        // 高解像度（5倍）
-        const scale = 5;
-        canvas.width = pW * scale;
-        canvas.height = pH * scale;
-
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        ctx.save();
-        ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate((-currentRotation * Math.PI) / 180);
-
-        let imgW = currentImg.width;
-        let imgH = currentImg.height;
-        if (currentRotation % 180 !== 0) [imgW, imgH] = [imgH, imgW];
-
-        // 【修正】用紙サイズいっぱいに配置（余白を作らない Cover ロジック）
-        const ratio = Math.max(canvas.width / imgW, canvas.height / imgH);
-        
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.filter = 'contrast(1.2) brightness(1.05)';
-        
-        ctx.drawImage(currentImg, -currentImg.width * ratio / 2, -currentImg.height * ratio / 2, currentImg.width * ratio, currentImg.height * ratio);
-        ctx.restore();
-
-        document.getElementById('preview-area').style.display = 'block';
-        log("✅ 補正完了。向きが違う場合は下のボタンで直してください。");
-    }
-
-    document.getElementById('paper-size').onchange = render;
-    document.getElementById('paper-orientation').onchange = render;
-
-    document.getElementById('save-pdf').onclick = () => {
         const { jsPDF } = window.jspdf;
-        const sizeKey = document.getElementById('paper-size').value;
-        const orient = document.getElementById('paper-orientation').value;
-        let [w, h] = paperMap[sizeKey];
-        if (orient === 'l') [w, h] = [h, w];
-
-        const canvas = document.getElementById('main-canvas');
-        const pdf = new jsPDF(orient, 'mm', [w, h]);
-        // プレビューで見えているキャンバスの状態をそのままPDF化
-        pdf.addImage(canvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, w, h);
-        pdf.save(`Scan_B4_Fixed.pdf`);
+        const pdf = new jsPDF(orient, 'mm', [pW, pH]);
+        
+        // 切り抜いた部分だけを用紙いっぱいに配置
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        pdf.addImage(imgData, 'JPEG', 0, 0, pW, pH);
+        pdf.save(`Scan_Fixed_Size.pdf`);
+        
+        document.getElementById('log').innerText = "✅ PDFを保存しました。";
     };
 </script>
 </body>
