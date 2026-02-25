@@ -1,31 +1,39 @@
-<div class="sidebar-brand" style="padding: 24px; font-weight: bold; color: #2563eb; font-size: 1.2rem;">
-    🛠️ マイツール集
+<div class="sidebar-content" style="font-family: sans-serif; color: #1e293b;">
+    <div style="padding: 24px; font-weight: bold; color: #2563eb; font-size: 1.2rem; border-bottom: 1px solid #e2e8f0; margin-bottom: 10px;">
+        🛠️ マイツール集
+    </div>
+
+    <nav style="display: flex; flex-direction: column; gap: 4px; padding: 0 10px;">
+        <a href="index.html" id="nav-home" style="text-decoration: none; color: #475569; padding: 10px 15px; border-radius: 8px; display: block; transition: 0.2s;">🏠 ホームに戻る</a>
+        <a href="about.html" id="nav-about" style="text-decoration: none; color: #475569; padding: 10px 15px; border-radius: 8px; display: block; transition: 0.2s;">📖 はじめに</a>
+
+        <div style="height: 1px; background: #e2e8f0; margin: 10px 5px;"></div>
+
+        <details open style="margin-bottom: 5px;">
+            <summary style="list-style: none; cursor: pointer; padding: 10px 15px; color: #1e293b; font-weight: bold; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s;">
+                <span>📄 PDFツール</span>
+                <span style="font-size: 0.7rem;">▼</span>
+            </summary>
+            <div style="padding-left: 15px; display: flex; flex-direction: column; gap: 2px; margin-top: 5px;">
+                <a href="pdf-split.html" id="nav-pdf-split" style="text-decoration: none; color: #64748b; padding: 8px 15px; font-size: 0.9rem; border-radius: 6px; display: block;">・PDF Splitter</a>
+                <span style="color: #cbd5e1; padding: 8px 15px; font-size: 0.9rem; cursor: default;">・PDF結合（準備中）</span>
+            </div>
+        </details>
+
+        <details style="margin-bottom: 5px;">
+            <summary style="list-style: none; cursor: pointer; padding: 10px 15px; color: #1e293b; font-weight: bold; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                <span>🧮 計算ツール</span>
+                <span style="font-size: 0.7rem;">▼</span>
+            </summary>
+            <div style="padding-left: 15px; display: flex; flex-direction: column; gap: 2px; margin-top: 5px;">
+                <span style="color: #cbd5e1; padding: 8px 15px; font-size: 0.9rem; cursor: default;">・スマート割り勘（準備中）</span>
+            </div>
+        </details>
+    </nav>
 </div>
 
-<nav class="nav-menu" style="display: flex; flex-direction: column; gap: 5px; padding: 0 15px;">
-    
-    <a href="index.html" class="nav-item" id="nav-home" style="text-decoration: none; color: #475569; padding: 10px 15px; border-radius: 8px; display: block;">🏠 ホーム</a>
-    <a href="about.html" class="nav-item" id="nav-about" style="text-decoration: none; color: #475569; padding: 10px 15px; border-radius: 8px; display: block;">📖 はじめに</a>
-
-    <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 10px 0;">
-
-    <details style="margin-bottom: 5px;">
-        <summary style="list-style: none; cursor: pointer; padding: 10px 15px; color: #1e293b; font-weight: bold; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-            📄 PDFツール <span style="font-size: 0.7rem;">▼</span>
-        </summary>
-        <div class="nav-group-content" style="padding-left: 20px; display: flex; flex-direction: column; gap: 2px; margin-top: 5px;">
-            <a href="pdf-split.html" class="nav-sub-item" id="nav-pdf-split" style="text-decoration: none; color: #64748b; padding: 8px 15px; font-size: 0.9rem; display: block;">・PDF Splitter</a>
-            <span style="color: #cbd5e1; padding: 8px 15px; font-size: 0.9rem; cursor: default;">・PDF結合（準備中）</span>
-        </div>
-    </details>
-
-    <details style="margin-bottom: 5px;">
-        <summary style="list-style: none; cursor: pointer; padding: 10px 15px; color: #1e293b; font-weight: bold; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-            🧮 計算ツール <span style="font-size: 0.7rem;">▼</span>
-        </summary>
-        <div class="nav-group-content" style="padding-left: 20px; display: flex; flex-direction: column; gap: 2px; margin-top: 5px;">
-            <span style="color: #cbd5e1; padding: 8px 15px; font-size: 0.9rem; cursor: default;">・スマート割り勘（準備中）</span>
-        </div>
-    </details>
-
-</nav>
+<style>
+    summary::-webkit-details-marker { display: none; }
+    .nav-item-active { background-color: #eff6ff !important; color: #2563eb !important; font-weight: bold; }
+    a:hover { background-color: #f1f5f9; }
+</style>
