@@ -23,74 +23,55 @@
             min-height: 100vh;
         }
 
-        /* サイドバー */
+        /* サイドバーの固定領域 */
         .sidebar {
             width: 260px;
             background-color: var(--card-bg);
             border-right: 1px solid var(--border);
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
             position: fixed;
             height: 100vh;
+            z-index: 100;
+            overflow-y: auto;
         }
 
-        .sidebar-brand {
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: var(--primary);
-            margin-bottom: 32px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .nav-menu {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .nav-item {
-            text-decoration: none;
-            color: var(--text-sub);
-            padding: 12px 16px;
-            border-radius: 8px;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .nav-item:hover {
-            background-color: #f1f5f9;
-            color: var(--primary);
-        }
-
-        .nav-item.active {
-            background-color: #eff6ff;
-            color: var(--primary);
-            font-weight: bold;
-        }
-
-        /* メインコンテンツ */
+        /* メインコンテンツ（中央寄せ設定） */
         .main-content {
             flex: 1;
             margin-left: 260px;
-            padding: 48px;
+            padding: 60px 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px; /* カードが並びやすい幅 */
         }
 
         .header {
-            margin-bottom: 40px;
+            margin-bottom: 48px;
+        }
+
+        .version-badge {
+            display: inline-block;
+            background: #e2e8f0;
+            color: #475569;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 12px;
         }
 
         h1 {
-            font-size: 1.875rem;
-            margin-bottom: 8px;
+            font-size: 2.25rem;
+            margin: 0 0 12px 0;
+            color: var(--text-main);
         }
 
         .subtitle {
             color: var(--text-sub);
+            font-size: 1.1rem;
         }
 
         /* ツールグリッド */
@@ -104,23 +85,24 @@
         .tool-card {
             background: var(--card-bg);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 24px;
+            border-radius: 20px;
+            padding: 32px;
             text-decoration: none;
             color: inherit;
             transition: all 0.3s ease;
             display: flex;
             flex-direction: column;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
 
-        /* 公開中のカード用スタイル */
+        /* 公開中のカード */
         .tool-card.active-tool:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
             border-color: var(--primary);
         }
 
-        /* 準備中のカード用スタイル */
+        /* 準備中のカード */
         .tool-card.pending-tool {
             opacity: 0.7;
             cursor: default;
@@ -129,8 +111,8 @@
         }
 
         .tool-icon {
-            font-size: 2rem;
-            margin-bottom: 16px;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
         }
 
         .tool-tag {
@@ -141,40 +123,40 @@
             padding: 4px 12px;
             border-radius: 20px;
             width: fit-content;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
         }
 
         .tool-title {
-            font-size: 1.25rem;
+            font-size: 1.3rem;
             font-weight: bold;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
         }
 
         .tool-desc {
-            font-size: 0.9375rem;
+            font-size: 0.95rem;
             color: var(--text-sub);
-            line-height: 1.5;
+            line-height: 1.6;
             flex: 1;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
         .tool-link-text {
             color: var(--primary);
             font-weight: bold;
-            font-size: 0.875rem;
+            font-size: 0.9rem;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px;
         }
 
         .pending-text {
             color: #94a3b8;
         }
 
-        @media (max-width: 768px) {
-            body { flex-direction: column; }
-            .sidebar { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--border); }
-            .main-content { margin-left: 0; padding: 24px; }
+        /* レスポンシブ対応 */
+        @media (max-width: 900px) {
+            .sidebar { display: none; }
+            .main-content { margin-left: 0; padding: 40px 20px; }
         }
     </style>
 </head>
@@ -183,45 +165,65 @@
     <aside class="sidebar" id="common-sidebar"></aside>
 
     <main class="main-content">
-        <header class="header">
-            <h1>無料で使える便利なWebツール集</h1>
-            <p class="subtitle">インストール不要。ブラウザ上で全ての処理が完結するため、データが送信されず安全です。</p>
-        </header>
+        <div class="container">
+            <header class="header">
+                <span class="version-badge">Version 1.01</span>
+                <h1>無料で使える便利なWebツール集</h1>
+                <p class="subtitle">インストール不要。ブラウザ上で全ての処理が完結するため、データが送信されず安全です。</p>
+            </header>
 
-        <div class="tools-grid">
-            
-            <a href="pdf-split.html" class="tool-card active-tool">
-                <div class="tool-icon">✂️</div>
-                <div class="tool-tag">JavaScript / PDF-Lib</div>
-                <div class="tool-title">PDF分割ツール</div>
-                <div class="tool-desc">
-                    大きなPDFファイルをページごとに分割、または指定した範囲で抽出します。機密文書も安全に処理可能です。
-                </div>
-                <div class="tool-link-text">ツールを開く <span>→</span></div>
-            </a>
+            <div class="tools-grid">
+                
+                <a href="pdf-split.html" class="tool-card active-tool">
+                    <div class="tool-icon">✂️</div>
+                    <div class="tool-tag">JavaScript / PDF-Lib</div>
+                    <div class="tool-title">PDF分割ツール</div>
+                    <div class="tool-desc">
+                        大きなPDFファイルをページごとに分割、または指定した範囲で抽出します。機密文書も安全に処理可能です。
+                    </div>
+                    <div class="tool-link-text">ツールを開く <span>→</span></div>
+                </a>
 
-            <div class="tool-card pending-tool">
-                <div class="tool-icon" style="filter: grayscale(1);">🍻</div>
-                <div class="tool-tag" style="background-color: #f1f5f9; color: #94a3b8;">Python / PyScript</div>
-                <div class="tool-title" style="color: #94a3b8;">スマート割り勘ツール</div>
-                <div class="tool-desc">
-                    【開発中】役職やアルコールの有無、遅刻などを考慮して、自動で「不公平感のない」金額を算出します。
+                <div class="tool-card pending-tool">
+                    <div class="tool-icon" style="filter: grayscale(1);">🍻</div>
+                    <div class="tool-tag" style="background-color: #f1f5f9; color: #94a3b8;">Python / PyScript</div>
+                    <div class="tool-title" style="color: #94a3b8;">スマート割り勘ツール</div>
+                    <div class="tool-desc">
+                        【開発中】役職やアルコールの有無、遅刻などを考慮して、自動で「不公平感のない」金額を算出します。
+                    </div>
+                    <div class="tool-link-text pending-text">Coming Soon...</div>
                 </div>
-                <div class="tool-link-text pending-text">Coming Soon...</div>
+
+                <div class="tool-card pending-tool">
+                    <div class="tool-icon" style="filter: grayscale(1);">🚀</div>
+                    <div class="tool-tag" style="background-color: #f1f5f9; color: #94a3b8;">Planning</div>
+                    <div class="tool-title" style="color: #94a3b8;">新ツールを企画中</div>
+                    <div class="tool-desc">
+                        解析支援ツールや画像整形など、エンジニア業務を効率化するツールを順次追加していきます。
+                    </div>
+                    <div class="tool-link-text pending-text">お楽しみに！</div>
+                </div>
+
             </div>
-
-            <div class="tool-card pending-tool">
-                <div class="tool-icon" style="filter: grayscale(1);">🚀</div>
-                <div class="tool-tag" style="background-color: #f1f5f9; color: #94a3b8;">Python</div>
-                <div class="tool-title" style="color: #94a3b8;">新ツールを企画中</div>
-                <div class="tool-desc">
-                    CSVデータの整形や、簡単な画像変換など、日々の業務に役立つツールを順次追加していきます。
-                </div>
-                <div class="tool-link-text pending-text">お楽しみに！</div>
-            </div>
-
         </div>
     </main>
+
+    <script>
+        fetch('sidebar.html')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('common-sidebar').innerHTML = data;
+                
+                // 現在のページ（ホーム）のメニューをハイライト
+                const navHome = document.getElementById('nav-home');
+                if(navHome) {
+                    navHome.style.backgroundColor = '#eff6ff';
+                    navHome.style.color = '#2563eb';
+                    navHome.style.fontWeight = 'bold';
+                }
+            })
+            .catch(error => console.error('サイドバーの読み込み失敗:', error));
+    </script>
 
 </body>
 </html>
