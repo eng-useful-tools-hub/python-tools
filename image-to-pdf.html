@@ -3,32 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image to Scan PDF - 高画質スキャンツール</title>
+    <title>Image to Scan PDF - Version 1.04 (Auto Rotate)</title>
     <script async src="https://docs.opencv.org/4.5.4/opencv.js" onload="onOpenCvReady();"></script>
+    <script src="https://unpkg.com/tesseract.js@v4.0.1/dist/tesseract.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <style>
         :root { --primary: #2563eb; --bg-color: #f8fafc; --border: #e2e8f0; }
         body { font-family: sans-serif; background: var(--bg-color); margin: 0; display: flex; }
-        .sidebar { width: 260px; background: white; border-right: 1px solid var(--border); position: fixed; height: 100vh; }
+        .sidebar { width: 260px; background: white; border-right: 1px solid var(--border); position: fixed; height: 100vh; z-index: 100; }
         .main-content { flex: 1; margin-left: 260px; padding: 40px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 800px; }
-        
+        .container { width: 100%; max-width: 900px; }
         .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid var(--border); }
         .drop-zone { border: 2px dashed var(--border); padding: 40px; text-align: center; border-radius: 15px; cursor: pointer; background: #fafafa; }
-        .drop-zone:hover { border-color: var(--primary); background: #eff6ff; }
-        
-        .setting-group { margin-bottom: 20px; }
-        select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); width: 100%; font-size: 1rem; }
-        
-        #preview-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 20px; }
-        .preview-item { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; position: relative; }
-        .preview-item img { width: 100%; height: auto; display: block; }
-        
-        .btn { background: var(--primary); color: white; border: none; padding: 15px 30px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1.1rem; }
-        .btn:disabled { background: #cbd5e1; }
-        
-        #cv-status { font-size: 0.8rem; color: #64748b; margin-bottom: 10px; }
+        #preview-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; margin-top: 20px; }
+        .preview-box { position: relative; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 10px; }
+        .img-wrap { width: 100%; aspect-ratio: 1/1.4; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #f1f5f9; border-radius: 8px; }
+        .img-wrap img { max-width: 100%; max-height: 100%; }
+        .status-badge { font-size: 0.7rem; background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 10px; margin-bottom: 5px; display: inline-block; }
+        .btn { background: var(--primary); color: white; border: none; padding: 18px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1.1rem; }
+        #status-display { margin: 10px 0; font-weight: bold; color: var(--primary); }
     </style>
 </head>
 <body>
@@ -37,125 +31,144 @@
 
 <main class="main-content">
     <div class="container">
-        <h1>🖼️ Image to Scan PDF</h1>
-        <div id="cv-status">OpenCV.js 読み込み中...</div>
+        <header>
+            <span style="background:#e2e8f0; padding:4px 12px; border-radius:20px; font-size:0.8rem;">Version 1.04</span>
+            <h1>🖼️ Auto-Scan to PDF</h1>
+            <p id="status-display">エンジン読み込み中...</p>
+        </header>
 
         <div class="card">
-            <div class="setting-group">
-                <label><strong>1. 出力サイズを選択:</strong></label>
-                <select id="paper-size">
-                    <option value="a4">A4 (210 x 297 mm)</option>
-                    <option value="a3">A3 (297 x 420 mm)</option>
-                    <option value="b4">B4 (250 x 353 mm)</option>
-                    <option value="b5">B5 (176 x 250 mm)</option>
-                </select>
-            </div>
-
-            <div class="drop-zone" id="drop-zone">
-                <div style="font-size: 30px;">📸</div>
-                画像をドロップするかクリックして選択
-                <input type="file" id="file-input" multiple accept="image/*" style="display:none;">
-            </div>
+            <label><strong>1. 用紙サイズ:</strong></label>
+            <select id="paper-size" style="width:100%; padding:10px; margin: 10px 0 20px 0; border-radius:8px;">
+                <option value="a4">A4</option><option value="a3">A3</option><option value="b4">B4</option>
+            </select>
+            <div class="drop-zone" id="drop-zone">📥 画像をドロップして自動向き補正</div>
+            <input type="file" id="file-input" multiple accept="image/*" style="display:none;">
         </div>
 
-        <div id="processing-card" class="card" style="display:none;">
-            <h3>変換キュー</h3>
+        <div id="processing-area" class="card" style="display:none;">
+            <h3>変換キュー（自動向き補正・スキャン済）</h3>
             <div id="preview-container"></div>
-            <button class="btn" id="generate-btn" style="margin-top:20px;">PDFを生成してダウンロード</button>
+            <button class="btn" id="generate-btn" style="margin-top:25px;">PDFを保存</button>
         </div>
     </div>
 </main>
 
 <script>
-    let processedImages = [];
+    let imagesData = [];
     const { jsPDF } = window.jspdf;
 
-    function onOpenCvReady() {
-        document.getElementById('cv-status').innerText = "✅ 画像処理エンジン準備完了";
-    }
+    function onOpenCvReady() { document.getElementById('status-display').innerText = "✅ 準備完了"; }
 
-    // サイドバー読み込み
     fetch('sidebar.html').then(res => res.text()).then(data => {
         document.getElementById('common-sidebar').innerHTML = data;
     });
 
-    const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
+    const dropZone = document.getElementById('drop-zone');
 
     dropZone.onclick = () => fileInput.click();
     fileInput.onchange = (e) => handleFiles(e.target.files);
+    dropZone.ondragover = (e) => e.preventDefault();
+    dropZone.ondrop = (e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); };
 
     async function handleFiles(files) {
-        document.getElementById('processing-card').style.display = 'block';
+        if (!files.length) return;
+        document.getElementById('processing-area').style.display = 'block';
+        const status = document.getElementById('status-display');
+
         for (let file of files) {
-            const img = await loadImage(file);
-            const processedDataUrl = processImage(img);
-            processedImages.push(processedDataUrl);
-            addPreview(processedDataUrl);
+            status.innerText = `解析中: ${file.name}...`;
+            const imgElement = await loadImage(file);
+            
+            // 1. 文字の向きを自動判定 (OCR)
+            const orientation = await detectOrientation(imgElement);
+            
+            // 2. 回転させてからスキャン補正
+            const rotatedCanvas = await rotateAndProcess(imgElement, orientation);
+            const dataUrl = rotatedCanvas.toDataURL('image/jpeg', 0.85);
+            
+            imagesData.push(dataUrl);
+            addPreview(dataUrl, orientation);
         }
+        status.innerText = "✅ 全ての画像の向きを補正しました。";
     }
 
     function loadImage(file) {
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => resolve(img);
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+        return new Promise(res => {
+            const r = new FileReader();
+            r.onload = e => { const i = new Image(); i.onload = () => res(i); i.src = e.target.result; };
+            r.readAsDataURL(file);
         });
     }
 
-    // --- 高画質スキャン補正コアロジック ---
-    function processImage(imageSource) {
-        let src = cv.imread(imageSource);
+    // --- OCRによる向き判定 ---
+    async function detectOrientation(img) {
+        // Tesseract.jsの向き検出機能を利用
+        const worker = await Tesseract.createWorker();
+        await worker.loadLanguage('jpn+eng');
+        await worker.initialize('jpn+eng');
+        const { data } = await worker.detect(img);
+        await worker.terminate();
+        
+        // orientation_degrees: 0, 90, 180, 270
+        return data.orientation_degrees || 0;
+    }
+
+    // --- 回転 & スキャン風処理 ---
+    async function rotateAndProcess(img, degrees) {
+        let src = cv.imread(img);
         let dst = new cv.Mat();
+        
+        // 向き補正 (degrees分だけ「逆転」させる)
+        if (degrees !== 0) {
+            let center = new cv.Point(src.cols / 2, src.rows / 2);
+            let M = cv.getRotationMatrix2D(center, -degrees, 1); // 逆回転
+            // 回転後のサイズ計算
+            let newSize = (degrees === 90 || degrees === 270) ? 
+                          new cv.Size(src.rows, src.cols) : new cv.Size(src.cols, src.rows);
+            cv.warpAffine(src, dst, M, newSize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+        } else {
+            src.copyTo(dst);
+        }
 
-        // 1. グレースケール化
-        cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY);
-
-        // 2. 照明ムラ補正 & 文字強調 (Adaptive Thresholding)
-        // これにより背景が白く、文字が黒く強調されます
+        // スキャン風補正
+        cv.cvtColor(dst, dst, cv.COLOR_RGBA2GRAY);
         cv.adaptiveThreshold(dst, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 21, 10);
-
-        // 3. シャープ化（解像感アップ）
-        // ガウシアンブラを引くことでエッジを強調
-        let ksize = new cv.Size(0, 0);
+        
         let blurred = new cv.Mat();
-        cv.GaussianBlur(dst, blurred, ksize, 3);
+        cv.GaussianBlur(dst, blurred, new cv.Size(0,0), 2);
         cv.addWeighted(dst, 1.5, blurred, -0.5, 0, dst);
 
-        // プレビュー用にCanvasへ出力
         const canvas = document.createElement('canvas');
         cv.imshow(canvas, dst);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-
         src.delete(); dst.delete(); blurred.delete();
-        return dataUrl;
+        return canvas;
     }
 
-    function addPreview(url) {
-        const div = document.createElement('div');
-        div.className = 'preview-item';
-        div.innerHTML = `<img src="${url}">`;
-        document.getElementById('preview-container').appendChild(div);
+    function addPreview(url, deg) {
+        const container = document.getElementById('preview-container');
+        const box = document.createElement('div');
+        box.className = 'preview-box';
+        box.innerHTML = `
+            <span class="status-badge">補正: ${deg}°</span>
+            <div class="img-wrap"><img src="${url}"></div>
+        `;
+        container.appendChild(box);
     }
 
-    document.getElementById('generate-btn').onclick = () => {
-        const size = document.getElementById('paper-size').value;
-        const pdf = new jsPDF('p', 'mm', size);
-        const width = pdf.internal.pageSize.getWidth();
-        const height = pdf.internal.pageSize.getHeight();
+    document.getElementById('generate-btn').onclick = function() {
+        const format = document.getElementById('paper-size').value;
+        const pdf = new jsPDF('p', 'mm', format);
+        const w = pdf.internal.pageSize.getWidth();
+        const h = pdf.internal.pageSize.getHeight();
 
-        processedImages.forEach((imgData, index) => {
-            if (index > 0) pdf.addPage();
-            pdf.addImage(imgData, 'JPEG', 0, 0, width, height);
+        imagesData.forEach((data, i) => {
+            if (i > 0) pdf.addPage();
+            pdf.addImage(data, 'JPEG', 0, 0, w, h);
         });
-
-        pdf.save("scanned_document.pdf");
+        pdf.save("auto_scanned.pdf");
     };
 </script>
-
 </body>
 </html>
