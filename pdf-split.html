@@ -16,6 +16,7 @@
             --text-sub: #64748b;
             --accent-bg: #eff6ff;
             --border: #e2e8f0;
+            --error: #dc2626;
         }
 
         body {
@@ -32,7 +33,6 @@
             margin: auto;
         }
 
-        /* ヘッダー周り */
         header {
             text-align: center;
             margin-bottom: 40px;
@@ -54,7 +54,7 @@
             display: inline-block;
         }
 
-        /* お知らせボックス */
+        /* ガイドボックス */
         .notice-box {
             background-color: #fffbeb;
             border: 1px solid #fef3c7;
@@ -66,12 +66,11 @@
             box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
 
-        /* メインカード */
         .card {
             background: var(--card-bg);
             padding: 32px;
             border-radius: 20px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
             margin-bottom: 24px;
         }
 
@@ -83,7 +82,7 @@
             gap: 10px;
         }
 
-        /* ドロップエリア */
+        /* ドラッグ＆ドロップエリア */
         #drop_zone {
             border: 2px dashed var(--border);
             border-radius: 16px;
@@ -128,7 +127,6 @@
             box-shadow: 0 0 0 1px var(--primary);
         }
 
-        /* 入力エリア */
         .input-group {
             background: #f8fafc;
             padding: 20px;
@@ -142,15 +140,9 @@
             border: 1px solid var(--border);
             border-radius: 8px;
             font-size: 1rem;
-            outline: none;
         }
 
-        input[type="number"]:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-
-        /* 分割ボタン */
+        /* 分割実行ボタン */
         button#split_btn {
             background-color: var(--primary);
             color: white;
@@ -165,18 +157,16 @@
             box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
         }
 
-        button#split_btn:hover {
+        button#split_btn:hover:not(:disabled) {
             background-color: var(--primary-hover);
-            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+            transform: translateY(-1px);
         }
 
         button#split_btn:disabled {
             background-color: #cbd5e1;
-            box-shadow: none;
             cursor: not-allowed;
         }
 
-        /* 進捗バー */
         .progress-bar {
             width: 100%;
             background: #e2e8f0;
@@ -194,34 +184,33 @@
             transition: width 0.3s ease;
         }
 
-        /* フッター免責事項 */
-        .disclaimer {
+        .split-point-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #edf2f7;
+        }
+
+        .error-message {
+            color: var(--error);
+            background: #fef2f2;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid #fee2e2;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        footer.disclaimer {
             text-align: center;
             font-size: 0.8rem;
             color: var(--text-sub);
             margin-top: 60px;
             padding: 20px;
             border-top: 1px solid var(--border);
-        }
-
-        .split-point-item {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 8px 0;
-            border-bottom: 1px solid #edf2f7;
-        }
-
-        /* 成功メッセージ */
-        .success-msg {
-            color: #059669;
-            background: #ecfdf5;
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: bold;
-            display: none;
-            margin-top: 15px;
+            line-height: 1.8;
         }
     </style>
 </head>
@@ -230,11 +219,11 @@
 <div class="container">
     <header>
         <h1>PDF Splitter</h1>
-        <div class="version-tag">Version 1.20</div>
+        <div class="version-tag">Version 1.21 (Public Release)</div>
     </header>
 
     <div class="notice-box">
-        💡 <strong>ご利用の目安:</strong> ブラウザの仕様上、200MB程度を推奨サイズとしています。大きなファイルも「トライ」可能ですが、PCのスペックにより時間がかかる場合があります。
+        💡 <strong>ご利用の目安:</strong> 推奨サイズは200MB程度です。大容量ファイルも処理可能ですが、お使いのデバイスのメモリ状況により時間がかかる場合があります。
     </div>
 
     <div class="card">
@@ -246,7 +235,7 @@
         <input type="file" id="file_input" accept="application/pdf" style="display: none;">
         
         <div id="file_info" style="margin-top:20px; font-weight:600; text-align:center;"></div>
-        <div id="status" style="margin-top:10px; text-align:center;"></div>
+        <div id="status_area"></div>
         
         <div class="progress-bar" id="p_bar">
             <div class="progress-fill" id="p_fill"></div>
@@ -271,17 +260,19 @@
         </div>
         
         <button id="split_btn">分割処理を開始</button>
-        <div id="success_msg" class="success-msg">✨ 完了しました！</div>
+        <div id="success_msg" style="display:none; color: #059669; text-align:center; font-weight:bold; margin-top:15px; background:#ecfdf5; padding:10px; border-radius:8px;">✨ 全ての分割が完了しました！</div>
     </div>
 
     <footer class="disclaimer">
-        本ツールは個人の開発物です。処理はすべてブラウザ内で完結し、外部サーバーへファイルが送られることはありません。<br>
-        不具合等がある場合はご容赦ください。大容量ファイルの際はメモリ不足にご注意ください。
+        <strong>【免責事項・ご注意】</strong><br>
+        ・本ツールは個人開発のWebアプリです。処理はすべてブラウザ内で完結し、外部へファイルが送られることはありません。<br>
+        ・<strong>暗号化や編集制限、パスワード保護</strong>が施されたPDFは解析できずエラーになる場合があります。<br>
+        ・エラーの際は、一度PDFを閲覧ソフトで開き「PDFとして印刷（再保存）」したものをお試しください。<br>
+        ・本ツールの使用によるデータの損失等について、製作者は一切の責任を負いかねます。不具合等はご容赦ください。
     </footer>
 </div>
 
 <script>
-    /* JavaScriptロジックは v1.17 と同等の「順次保存」ロジックを継承しつつ、UI連携のみアップデート */
     let pdfData = null;
     let originalFileName = "";
     let totalPages = 0;
@@ -290,7 +281,7 @@
 
     const fileInput = document.getElementById('file_input');
     const dropZone = document.getElementById('drop_zone');
-    const status = document.getElementById('status');
+    const statusArea = document.getElementById('status_area');
     const fileInfo = document.getElementById('file_info');
     const step2Area = document.getElementById('step2_area');
     const numSplits = document.getElementById('num_splits');
@@ -310,12 +301,7 @@
         totalFileSize = file.size;
         
         pBar.style.display = "block";
-        status.innerText = "読み込んでいます...";
-        status.style.color = "var(--text-main)";
-
-        if (totalFileSize > 200 * 1024 * 1024) {
-            status.innerHTML = `<span style="color:#e67e22">⚠️ 200MB超えを検知。慎重に処理を開始します...</span>`;
-        }
+        statusArea.innerHTML = `<div style="text-align:center; color:var(--text-main);">読み込んでいます...</div>`;
 
         const reader = new FileReader();
         reader.onprogress = (e) => {
@@ -331,12 +317,19 @@
                 const pdfDoc = await PDFLib.PDFDocument.load(pdfData, { ignoreEncryption: true });
                 totalPages = pdfDoc.getPageCount();
                 fileInfo.innerText = `${file.name} (${(totalFileSize/1024/1024).toFixed(1)} MB / ${totalPages} P)`;
-                status.innerText = "読み込み完了";
+                statusArea.innerHTML = `<div style="text-align:center; color:var(--primary); font-weight:bold;">読み込み完了</div>`;
                 step2Area.style.display = "block";
                 updateSplitUI();
             } catch (err) {
-                status.innerText = "PDFの解析に失敗しました。";
-                status.style.color = "red";
+                console.error(err);
+                statusArea.innerHTML = `
+                    <div class="error-message">
+                        <strong>❌ PDFの解析に失敗しました</strong><br>
+                        このファイルは強力な<strong>暗号化・閲覧制限</strong>がかかっているか、構造が特殊なため読み込めません。<br><br>
+                        <small>【解決策】PDF閲覧ソフトで開き、「印刷」から「PDFとして保存」を選択して作り直したファイルでお試しください。</small>
+                    </div>`;
+                fileInfo.innerText = "";
+                step2Area.style.display = "none";
             }
         };
         reader.readAsArrayBuffer(file);
@@ -363,7 +356,7 @@
         const num = parseInt(numSplits.value) || 2;
         const container = document.getElementById('split_points_container');
         const step = Math.ceil(totalPages / num);
-        let html = "";
+        let html = "<strong>分割位置の調整:</strong>";
         for (let i = 1; i < num; i++) {
             let val = Math.floor(step * i);
             html += `<div class="split-point-item">区切り ${i}: <span><input type="number" class="split-point" value="${val}" min="1" max="${totalPages-1}"> ページ目の後ろ</span></div>`;
@@ -375,7 +368,7 @@
     splitBtn.onclick = async () => {
         splitBtn.disabled = true;
         document.getElementById('success_msg').style.display = "none";
-        status.innerText = "分割を処理しています...";
+        statusArea.innerHTML = `<div style="text-align:center;">分割ファイルを順次保存しています...</div>`;
         
         try {
             const srcDoc = await PDFLib.PDFDocument.load(pdfData);
@@ -416,11 +409,10 @@
                 await new Promise(r => setTimeout(r, 400));
             }
             
-            status.innerText = "分割が正常に完了しました";
+            statusArea.innerHTML = `<div style="text-align:center; color:var(--primary);">正常に完了しました</div>`;
             document.getElementById('success_msg').style.display = "block";
         } catch (err) {
-            status.innerText = "エラーが発生しました（メモリ不足の可能性があります）";
-            status.style.color = "red";
+            statusArea.innerHTML = `<div class="error-message">処理中にエラーが発生しました。メモリ不足か、特殊なPDF形式である可能性があります。</div>`;
         } finally {
             splitBtn.disabled = false;
         }
