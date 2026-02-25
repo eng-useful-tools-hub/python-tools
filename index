@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>無料Webツール集 (Python & JS)</title>
+    <style>
+        :root {
+            /* PDFツールと完全に共通のカラーパレット */
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-color: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --accent-bg: #eff6ff;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        /* ヘッダー（ナビゲーションバー） */
+        .navbar {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 15px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .navbar-brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* メインコンテンツエリア */
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .hero-section {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .hero-title {
+            font-size: 2.5rem;
+            color: var(--text-main);
+            margin-bottom: 15px;
+            letter-spacing: -0.025em;
+        }
+
+        .hero-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-sub);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* ツール一覧のグリッドレイアウト */
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        /* ツールカード */
+        .tool-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 30px;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.15);
+        }
+
+        .tool-icon {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            background: var(--accent-bg);
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+        }
+
+        .tool-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 10px;
+        }
+
+        .tool-desc {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+            margin-bottom: 20px;
+            flex-grow: 1; /* ボタンを下に押しやる */
+        }
+
+        .tool-tag {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--primary);
+            background-color: var(--accent-bg);
+            padding: 4px 10px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        .tool-link-text {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .tool-card:hover .tool-link-text {
+            color: var(--primary-hover);
+        }
+
+        /* フッター */
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding: 30px 20px;
+            border-top: 1px solid var(--border);
+            color: var(--text-sub);
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="index.html" class="navbar-brand">
+            <span>🛠️</span> マイツール集
+        </a>
+    </nav>
+
+    <div class="container">
+        <div class="hero-section">
+            <h1 class="hero-title">無料で使える便利なWebツール集</h1>
+            <p class="hero-subtitle">
+                日々の業務や生活を少しだけ便利にするツールを公開しています。<br>
+                PythonとJavaScriptを活用し、データはすべてブラウザ内で安全に処理されます。
+            </p>
+        </div>
+
+        <div class="tools-grid">
+            
+            <a href="pdf-split.html" class="tool-card">
+                <div class="tool-icon">✂️</div>
+                <div class="tool-tag">JavaScript / PDF-Lib</div>
+                <div class="tool-title">PDF分割ツール</div>
+                <div class="tool-desc">
+                    ブラウザ上で安全にPDFを分割。ページ数や容量(MB)を指定して、大容量ファイルでもサクサク処理できます。
+                </div>
+                <div class="tool-link-text">ツールを開く <span>→</span></div>
+            </a>
+
+            <a href="warikan.html" class="tool-card">
+                <div class="tool-icon">🍻</div>
+                <div class="tool-tag">Python / PyScript</div>
+                <div class="tool-title">スマート割り勘ツール</div>
+                <div class="tool-desc">
+                    大人数の飲み会でも迷わない！役職や遅刻などを考慮して、自動で不公平のない金額計算を行います。
+                </div>
+                <div class="tool-link-text">ツールを開く <span>→</span></div>
+            </a>
+
+            <div class="tool-card" style="opacity: 0.6; cursor: default;">
+                <div class="tool-icon">🚀</div>
+                <div class="tool-tag">Coming Soon</div>
+                <div class="tool-title">新しいツールを開発中</div>
+                <div class="tool-desc">
+                    現在、次なる便利なツールをPythonで開発中です。公開までしばらくお待ちください。
+                </div>
+                <div class="tool-link-text" style="color: var(--text-sub);">準備中...</div>
+            </div>
+
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 My Web Tools. Created with Python & JavaScript.<br>
+        本サイトのツールは個人の開発物であり、サーバーへのデータ送信は一切行いません。</p>
+    </footer>
+
+</body>
+</html>
