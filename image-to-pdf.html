@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image to Scan PDF - 高画質スキャンツール</title>
+    <script async src="https://docs.opencv.org/4.5.4/opencv.js" onload="onOpenCvReady();"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <style>
+        :root { --primary: #2563eb; --bg-color: #f8fafc; --border: #e2e8f0; }
+        body { font-family: sans-serif; background: var(--bg-color); margin: 0; display: flex; }
+        .sidebar { width: 260px; background: white; border-right: 1px solid var(--border); position: fixed; height: 100vh; }
+        .main-content { flex: 1; margin-left: 260px; padding: 40px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 800px; }
+        
+        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid var(--border); }
+        .drop-zone { border: 2px dashed var(--border); padding: 40px; text-align: center; border-radius: 15px; cursor: pointer; background: #fafafa; }
+        .drop-zone:hover { border-color: var(--primary); background: #eff6ff; }
+        
+        .setting-group { margin-bottom: 20px; }
+        select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); width: 100%; font-size: 1rem; }
+        
+        #preview-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 20px; }
+        .preview-item { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; position: relative; }
+        .preview-item img { width: 100%; height: auto; display: block; }
+        
+        .btn { background: var(--primary); color: white; border: none; padding: 15px 30px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1.1rem; }
+        .btn:disabled { background: #cbd5e1; }
+        
+        #cv-status { font-size: 0.8rem; color: #64748b; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<aside class="sidebar" id="common-sidebar"></aside>
+
+<main class="main-content">
+    <div class="container">
+        <h1>🖼️ Image to Scan PDF</h1>
+        <div id="cv-status">OpenCV.js 読み込み中...</div>
+
+        <div class="card">
+            <div class="setting-group">
+                <label><strong>1. 出力サイズを選択:</strong></label>
+                <select id="paper-size">
+                    <option value="a4">A4 (210 x 297 mm)</option>
+                    <option value="a3">A3 (297 x 420 mm)</option>
+                    <option value="b4">B4 (250 x 353 mm)</option>
+                    <option value="b5">B5 (176 x 250 mm)</option>
+                </select>
+            </div>
+
+            <div class="drop-zone" id="drop-zone">
+                <div style="font-size: 30px;">📸</div>
+                画像をドロップするかクリックして選択
+                <input type="file" id="file-input" multiple accept="image/*" style="display:none;">
+            </div>
+        </div>
+
+        <div id="processing-card" class="card" style="display:none;">
+            <h3>変換キュー</h3>
+            <div id="preview-container"></div>
+            <button class="btn" id="generate-btn" style="margin-top:20px;">PDFを生成してダウンロード</button>
+        </div>
+    </div>
+</main>
+
+<script>
+    let processedImages = [];
+    const { jsPDF } = window.jspdf;
+
+    function onOpenCvReady() {
+        document.getElementById('cv-status').innerText = "✅ 画像処理エンジン準備完了";
+    }
+
+    // サイドバー読み込み
+    fetch('sidebar.html').then(res => res.text()).then(data => {
+        document.getElementById('common-sidebar').innerHTML = data;
+    });
+
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+
+    dropZone.onclick = () => fileInput.click();
+    fileInput.onchange = (e) => handleFiles(e.target.files);
+
+    async function handleFiles(files) {
+        document.getElementById('processing-card').style.display = 'block';
+        for (let file of files) {
+            const img = await loadImage(file);
+            const processedDataUrl = processImage(img);
+            processedImages.push(processedDataUrl);
+            addPreview(processedDataUrl);
+        }
+    }
+
+    function loadImage(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // --- 高画質スキャン補正コアロジック ---
+    function processImage(imageSource) {
+        let src = cv.imread(imageSource);
+        let dst = new cv.Mat();
+
+        // 1. グレースケール化
+        cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY);
+
+        // 2. 照明ムラ補正 & 文字強調 (Adaptive Thresholding)
+        // これにより背景が白く、文字が黒く強調されます
+        cv.adaptiveThreshold(dst, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 21, 10);
+
+        // 3. シャープ化（解像感アップ）
+        // ガウシアンブラを引くことでエッジを強調
+        let ksize = new cv.Size(0, 0);
+        let blurred = new cv.Mat();
+        cv.GaussianBlur(dst, blurred, ksize, 3);
+        cv.addWeighted(dst, 1.5, blurred, -0.5, 0, dst);
+
+        // プレビュー用にCanvasへ出力
+        const canvas = document.createElement('canvas');
+        cv.imshow(canvas, dst);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+        src.delete(); dst.delete(); blurred.delete();
+        return dataUrl;
+    }
+
+    function addPreview(url) {
+        const div = document.createElement('div');
+        div.className = 'preview-item';
+        div.innerHTML = `<img src="${url}">`;
+        document.getElementById('preview-container').appendChild(div);
+    }
+
+    document.getElementById('generate-btn').onclick = () => {
+        const size = document.getElementById('paper-size').value;
+        const pdf = new jsPDF('p', 'mm', size);
+        const width = pdf.internal.pageSize.getWidth();
+        const height = pdf.internal.pageSize.getHeight();
+
+        processedImages.forEach((imgData, index) => {
+            if (index > 0) pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', 0, 0, width, height);
+        });
+
+        pdf.save("scanned_document.pdf");
+    };
+</script>
+
+</body>
+</html>
