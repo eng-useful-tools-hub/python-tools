@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>はじめに - 無料Webツール集</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg-color: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --border: #e2e8f0;
+            --accent-bg: #eff6ff;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            line-height: 1.7;
+        }
+
+        /* 共通ヘッダー（indexと統一） */
+        .navbar {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 15px 40px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .navbar-brand {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 30px;
+            border-bottom: 3px solid var(--primary);
+            display: inline-block;
+        }
+
+        .section-card {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        h2 {
+            color: var(--primary);
+            font-size: 1.4rem;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .highlight-box {
+            background-color: #fffbeb;
+            border: 1px solid #fef3c7;
+            padding: 20px;
+            border-radius: 12px;
+            color: #92400e;
+            margin: 20px 0;
+        }
+
+        .step-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .step-list li {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+
+        .step-num {
+            background: var(--primary);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .btn-home {
+            display: inline-block;
+            margin-top: 40px;
+            padding: 12px 24px;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+
+        .btn-home:hover { opacity: 0.8; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="index.html" class="navbar-brand">
+            <span>🏠</span> ホームに戻る
+        </a>
+    </nav>
+
+    <div class="container">
+        <h1>📖 はじめに</h1>
+
+        <div class="section-card">
+            <h2>🛡️ セキュリティとプライバシー</h2>
+            <p>
+                当サイトで提供しているツール（PDF分割など）は、<strong>「クライアントサイド処理」</strong>という方式を採用しています。
+            </p>
+            <div class="highlight-box">
+                <strong>データはどこにも送信されません。</strong><br>
+                アップロードしたPDFファイルや計算データは、あなたのブラウザ内（手元のパソコン）だけで処理されます。サーバーに保存されたり、開発者が中身を見たりすることは技術的に不可能な設計になっています。
+            </div>
+        </div>
+
+        <div class="section-card">
+            <h2>⚙️ ツールの使い方</h2>
+            <ul class="step-list">
+                <li>
+                    <span class="step-num">1</span>
+                    <div><strong>ツールを選択：</strong> ホーム画面から、使いたい機能を選んでください。</div>
+                </li>
+                <li>
+                    <span class="step-num">2</span>
+                    <div><strong>ファイルを準備：</strong> PDF等のデータをドラッグ＆ドロップします。</div>
+                </li>
+                <li>
+                    <span class="step-num">3</span>
+                    <div><strong>設定・実行：</strong> 分割数などの条件を指定して実行ボタンを押すと、即座に結果がダウンロードされます。</div>
+                </li>
+            </ul>
+        </div>
+
+        <div class="section-card">
+            <h2>💡 開発について</h2>
+            <p>
+                このサイトは、Python（PyScript）やJavaScriptを活用して、日常の「ちょっと面倒」を解決するために作成された個人プロジェクトです。どなたでも無料で、回数制限なくご利用いただけます。
+            </p>
+        </div>
+
+        <a href="index.html" class="btn-home">ツール一覧へ戻る</a>
+    </div>
+
+</body>
+</html>
