@@ -12,6 +12,7 @@
             --text-main: #1e293b;
             --text-sub: #475569;
             --border: #e2e8f0;
+            --danger: #ef4444;
         }
 
         body {
@@ -34,23 +35,17 @@
             z-index: 100;
         }
 
-        /* サイドバー読み込み前のスタイル確保 */
-        .nav-menu { display: flex; flex-direction: column; gap: 8px; padding: 24px; }
-        .nav-item { text-decoration: none; color: var(--text-sub); padding: 12px 16px; border-radius: 8px; display: block; }
-        .nav-item.active { background-color: #eff6ff; color: var(--primary); font-weight: bold; }
-
-        /* メインコンテンツの中央寄せ設定 */
         .main-content {
             flex: 1;
-            margin-left: 260px; /* サイドバーの幅 */
+            margin-left: 260px;
             padding: 60px 20px;
             display: flex;
-            justify-content: center; /* 横方向の中央寄せ */
+            justify-content: center;
         }
 
         .container {
             width: 100%;
-            max-width: 800px; /* コンテンツの最大幅 */
+            max-width: 800px;
         }
 
         .version-badge {
@@ -64,7 +59,8 @@
             margin-bottom: 16px;
         }
 
-        h1 { font-size: 2.25rem; margin-top: 0; margin-bottom: 32px; color: var(--text-main); }
+        h1 { font-size: 2.25rem; margin-top: 0; margin-bottom: 10px; }
+        .page-subtitle { color: var(--text-sub); margin-bottom: 40px; }
 
         .section-card {
             background: var(--card-bg);
@@ -77,11 +73,12 @@
 
         h2 { 
             color: var(--primary); 
-            font-size: 1.4rem; 
+            font-size: 1.3rem; 
             margin-top: 0; 
             margin-bottom: 20px;
-            border-left: 5px solid var(--primary); 
-            padding-left: 15px; 
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
         .security-banner {
@@ -94,16 +91,26 @@
             font-weight: 600;
         }
 
-        p { margin-bottom: 1.5rem; color: var(--text-sub); }
+        .warning-box {
+            background-color: #fff1f2;
+            border: 1px solid #fecdd3;
+            padding: 20px;
+            border-radius: 12px;
+            color: #9f1239;
+            margin-top: 10px;
+        }
+
+        p { margin-bottom: 1rem; color: var(--text-sub); }
+        ul { padding-left: 20px; color: var(--text-sub); }
+        li { margin-bottom: 8px; }
 
         .footer-text {
             text-align: center;
             color: var(--text-sub);
             font-size: 0.85rem;
-            margin-top: 40px;
+            margin: 40px 0;
         }
 
-        /* レスポンシブ対応 */
         @media (max-width: 900px) {
             .sidebar { display: none; }
             .main-content { margin-left: 0; padding: 40px 20px; }
@@ -118,26 +125,48 @@
         <div class="container">
             <span class="version-badge">Version 1.01</span>
             <h1>📖 はじめに</h1>
+            <p class="page-subtitle">当サイトをご利用いただく前に、以下のガイドラインをご確認ください。</p>
 
             <div class="section-card">
-                <h2>🛡️ 安心・安全へのこだわり</h2>
+                <h2>🛡️ プライバシーと安全性</h2>
                 <div class="security-banner">
-                    ✅ データ送信ゼロ：サーバーレス処理
+                    ✅ 全ての処理はブラウザ内で完結します
                 </div>
                 <p>
-                    当サイトで提供しているツール（PDF分割など）は、全ての処理を利用者のブラウザ内で行います。
-                    ファイルが外部サーバーにアップロードされることはありません。
+                    当サイトのツール（PDF分割等）は、ファイルをサーバーにアップロードすることなく、あなたのパソコン内だけで処理を行います。
                 </p>
-                <p>
-                    機密書類や個人情報を含むデータも、ネットワーク経由の漏洩を心配することなく、安心してご利用いただけます。
-                </p>
+                <ul>
+                    <li>入力データやファイルが外部に送信されることはありません。</li>
+                    <li>機密文書や個人情報を含むファイルも安全に処理できます。</li>
+                    <li>サイト側でデータの内容を確認・保存することは不可能です。</li>
+                </ul>
             </div>
 
             <div class="section-card">
-                <h2>⚠️ 免責事項</h2>
+                <h2>⚠️ ご利用上の注意事項</h2>
+                <p>円滑なサービス提供のため、以下の事項を遵守してください。</p>
+                <ul>
+                    <li><strong>動作環境：</strong> 最新版の Google Chrome / Microsoft Edge での利用を推奨します。</li>
+                    <li><strong>ファイル制限：</strong> お使いのデバイスのメモリ性能により、極端に大容量のファイルは処理できない場合があります。</li>
+                    <li><strong>禁止事項：</strong> 本サイトのシステムを改ざんする行為、または自動スクリプト等による過度なアクセスを禁止します。</li>
+                    <li><strong>商用利用：</strong> 個人・法人問わず無料でご利用いただけます。</li>
+                </ul>
+            </div>
+
+            <div class="section-card">
+                <h2>⚖️ 免責事項・運営について</h2>
                 <p>
-                    本ツールは無償で提供されています。計算結果や処理結果の正確性には細心の注意を払っておりますが、万一、本サイトの利用により損害が生じた場合でも、運営者は一切の責任を負いかねますのであらかじめご了承ください。
+                    本ツールは無償で提供される個人プロジェクトです。正確な処理を追求しておりますが、以下の点をご了承ください。
                 </p>
+                <ul>
+                    <li><strong>無保証：</strong> 処理結果の完全性・正確性を保証するものではありません。</li>
+                    <li><strong>自己責任：</strong> 本サイトの利用により生じた直接的・間接的な損害（データ消失、業務遅延、金銭的トラブル等）について、運営者は一切の責任を負いません。</li>
+                </ul>
+                
+                <div class="warning-box">
+                    <strong>✉️ お問い合わせについて：</strong><br>
+                    当サイトは現在、<strong>個別のサポートやお問い合わせ対応（不具合報告、要望、操作方法の解説等）は行っておりません。</strong>あらかじめご了承ください。
+                </div>
             </div>
 
             <p class="footer-text">© 2024-2026 Useful Tools Hub</p>
@@ -149,11 +178,10 @@
             .then(response => response.text())
             .then(data => {
                 document.getElementById('common-sidebar').innerHTML = data;
-                // サイドバー内の「はじめに」をアクティブ（青色）にする
                 const navAbout = document.getElementById('nav-about');
                 if(navAbout) navAbout.classList.add('active');
             })
-            .catch(err => console.error('サイドバーの読み込みに失敗しました:', err));
+            .catch(err => console.error('Sidebar error:', err));
     </script>
 </body>
 </html>
