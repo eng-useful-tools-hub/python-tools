@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Image to Scan PDF - Ver 1.12</title>
+    <title>Image to Scan PDF - Ver 1.13</title>
     <script src="https://unpkg.com/tesseract.js@v4.0.1/dist/tesseract.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
@@ -11,21 +11,28 @@
         body { font-family: sans-serif; background: var(--bg); margin: 0; display: flex; color: #1e293b; }
         .sidebar { width: 260px; background: white; border-right: 1px solid #e2e8f0; position: fixed; height: 100vh; }
         .main-content { flex: 1; margin-left: 260px; padding: 40px; }
-        .container { max-width: 800px; margin: 0 auto; position: relative; }
+        .container { max-width: 850px; margin: 0 auto; position: relative; }
         .version { position: absolute; top: 0; right: 0; font-size: 0.8rem; font-weight: bold; color: #64748b; }
         .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; margin-bottom: 20px; }
-        .drop-zone { border: 2px dashed var(--border); padding: 40px; text-align: center; border-radius: 12px; cursor: pointer; background: #fafafa; }
         
         .control-group { display: flex; gap: 20px; margin-bottom: 20px; }
         .control-item { flex: 1; }
         select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; margin-top: 5px; }
 
-        .btn { background: var(--primary); color: white; border: none; padding: 18px; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1.1rem; margin-top: 20px; }
-        #log { font-size: 0.9rem; color: var(--primary); font-weight: bold; margin-top: 15px; }
+        .drop-zone { border: 2px dashed var(--border); padding: 40px; text-align: center; border-radius: 12px; cursor: pointer; background: #fafafa; transition: 0.3s; }
+        .drop-zone:hover { background: #f0f7ff; border-color: var(--primary); }
         
+        /* プレビューエリア */
         .preview-area { display: none; }
-        .canvas-container { background: #333; padding: 20px; border-radius: 8px; display: flex; justify-content: center; margin-top: 10px; }
-        canvas { max-width: 100%; height: auto; box-shadow: 0 0 15px rgba(0,0,0,0.5); background: white; }
+        .canvas-container { background: #555; padding: 20px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; margin-top: 10px; }
+        canvas { max-width: 100%; height: auto; box-shadow: 0 0 20px rgba(0,0,0,0.5); background: white; }
+        
+        .rotate-controls { margin-top: 15px; display: flex; gap: 10px; }
+        .rotate-btn { background: #475569; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .rotate-btn:hover { background: #1e293b; }
+
+        .btn-save { background: var(--primary); color: white; border: none; padding: 18px; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1.1rem; margin-top: 25px; }
+        #log { font-size: 0.9rem; color: var(--primary); font-weight: bold; margin: 15px 0; min-height: 1.2em; }
     </style>
 </head>
 <body>
@@ -34,22 +41,21 @@
 
 <main class="main-content">
     <div class="container">
-        <div class="version">Ver 1.12</div>
+        <div class="version">Ver 1.13</div>
         <h2>🖼️ Scan PDF Converter</h2>
 
         <div class="card">
             <div class="control-group">
                 <div class="control-item">
-                    <label><strong>用紙サイズ:</strong></label>
+                    <label><strong>1. 用紙サイズ:</strong></label>
                     <select id="paper-size">
                         <option value="a4">A4</option>
                         <option value="a3">A3</option>
                         <option value="b4" selected>B4</option>
-                        <option value="b5">B5</option>
                     </select>
                 </div>
                 <div class="control-item">
-                    <label><strong>用紙の向き:</strong></label>
+                    <label><strong>2. 用紙の向き:</strong></label>
                     <select id="paper-orientation">
                         <option value="p">縦向き (Portrait)</option>
                         <option value="l">横向き (Landscape)</option>
@@ -58,30 +64,35 @@
             </div>
 
             <div class="drop-zone" id="drop-zone">
-                <div style="font-size: 40px;">📁</div>
-                画像をドロップして解析開始
+                <div style="font-size: 40px;">📂</div>
+                画像をドロップ（自動向き補正付き）
                 <input type="file" id="file-input" accept="image/*" style="display:none;">
             </div>
             <div id="log"></div>
         </div>
 
         <div id="preview-area" class="card preview-area">
-            <h3>2. PDF出力プレビュー</h3>
-            <p style="font-size: 0.8rem; color: #64748b;">※選択したサイズと向きにフィットさせています。</p>
+            <h3>3. プレビュー & 向き微調整</h3>
+            <p style="font-size: 0.8rem; color: #64748b;">※AIが判定した向きが違う場合は下のボタンで回転させてください。</p>
+            
             <div class="canvas-container">
                 <canvas id="main-canvas"></canvas>
+                <div class="rotate-controls">
+                    <button class="rotate-btn" onclick="addRotation(-90)">↺ 左に90°</button>
+                    <button class="rotate-btn" onclick="addRotation(90)">↻ 右に90°</button>
+                </div>
             </div>
-            <button class="btn" id="save-pdf">PDFをダウンロード</button>
+            
+            <button class="btn-save" id="save-pdf">この状態でPDFを保存</button>
         </div>
     </div>
 </main>
 
 <script>
-    const paperMap = {
-        a4: [210, 297], a3: [297, 420], b4: [250, 353], b5: [176, 250]
-    };
-    let currentDataUrl = null;
-    let lastFile = null;
+    const paperMap = { a4: [210, 297], a3: [297, 420], b4: [250, 353] };
+    let currentImg = null;
+    let manualRotation = 0; // 手動回転角度
+    let autoRotation = 0;   // OCRが判定した角度
 
     fetch('sidebar.html').then(res => res.text()).then(data => {
         document.getElementById('common-sidebar').innerHTML = data;
@@ -89,69 +100,84 @@
 
     const fileInput = document.getElementById('file-input');
     document.getElementById('drop-zone').onclick = () => fileInput.click();
-    fileInput.onchange = (e) => { lastFile = e.target.files[0]; startProcess(); };
-    
-    // 設定変更時にもプレビューを更新
-    document.getElementById('paper-size').onchange = () => { if(lastFile) startProcess(); };
-    document.getElementById('paper-orientation').onchange = () => { if(lastFile) startProcess(); };
+    fileInput.onchange = (e) => startProcess(e.target.files[0]);
 
     function log(msg) { document.getElementById('log').innerText = msg; }
 
-    async function startProcess() {
-        if(!lastFile) return;
-        log("🔄 解析・補正中...");
+    async function startProcess(file) {
+        if(!file) return;
+        log("🔄 解析中...");
+        manualRotation = 0; // 新しい画像なのでリセット
         
-        const img = await new Promise(res => {
+        currentImg = await new Promise(res => {
             const r = new FileReader();
             r.onload = e => { const i = new Image(); i.onload = () => res(i); i.src = e.target.result; };
-            r.readAsDataURL(lastFile);
+            r.readAsDataURL(file);
         });
 
+        log("🔍 文字の向きを判定中...");
         const worker = await Tesseract.createWorker();
         await worker.loadLanguage('jpn+eng');
         await worker.initialize('jpn+eng');
-        const { data } = await worker.detect(img);
+        const { data } = await worker.detect(currentImg);
         await worker.terminate();
-        const deg = data.orientation_degrees || 0;
+        autoRotation = data.orientation_degrees || 0;
+
+        renderPreview();
+    }
+
+    function addRotation(deg) {
+        manualRotation = (manualRotation + deg) % 360;
+        renderPreview();
+    }
+
+    function renderPreview() {
+        if(!currentImg) return;
+        log("✨ 描画を更新中...");
 
         const sizeKey = document.getElementById('paper-size').value;
         const orient = document.getElementById('paper-orientation').value;
-        
-        // 向きに応じて幅と高さを入れ替え
         let [pW, pH] = paperMap[sizeKey];
         if (orient === 'l') [pW, pH] = [pH, pW];
 
         const canvas = document.getElementById('main-canvas');
         const ctx = canvas.getContext('2d');
 
-        // 解像度設定 (300dpi相当)
-        const dpr = 3; 
+        const dpr = 3; // 高画質化
         canvas.width = pW * dpr;
         canvas.height = pH * dpr;
 
+        // 背景
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.save();
         ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate((-deg * Math.PI) / 180);
+        
+        // OCRの自動回転 + ユーザーの手動回転を合算
+        const totalDeg = (autoRotation + manualRotation);
+        ctx.rotate((-totalDeg * Math.PI) / 180);
 
-        let imgW = img.width;
-        let imgH = img.height;
-        if (deg === 90 || deg === 270) [imgW, imgH] = [imgH, imgW];
+        let drawW = currentImg.width;
+        let drawH = currentImg.height;
+        // 回転後の画像サイズを計算（90度/270度の時）
+        if (totalDeg % 180 !== 0) [drawW, drawH] = [drawH, drawW];
 
-        // 指定された用紙の向きにピッタリ埋める
-        const scale = Math.max(canvas.width / imgW, canvas.height / imgH);
-        ctx.drawImage(img, -img.width * scale / 2, -img.height * scale / 2, img.width * scale, img.height * scale);
+        // 【修正】用紙枠に「収まる（Contain）」ように比率を計算
+        const scale = Math.min(canvas.width / drawW, canvas.height / drawH);
+        
+        // スキャン風フィルター
+        ctx.filter = 'grayscale(1) contrast(2.5) brightness(1.1)';
+        ctx.drawImage(currentImg, -currentImg.width * scale / 2, -currentImg.height * scale / 2, currentImg.width * scale, currentImg.height * scale);
         ctx.restore();
 
-        // 仕上げのフィルター
-        ctx.filter = 'grayscale(1) contrast(2.2) brightness(1.1)';
-        
-        currentDataUrl = canvas.toDataURL('image/jpeg', 0.9);
         document.getElementById('preview-area').style.display = 'block';
-        log("✅ 補正完了");
+        log("✅ 準備完了");
     }
+
+    // 設定変更時にプレビューを再描画
+    document.getElementById('paper-size').onchange = renderPreview;
+    document.getElementById('paper-orientation').onchange = renderPreview;
 
     document.getElementById('save-pdf').onclick = () => {
         const { jsPDF } = window.jspdf;
@@ -160,10 +186,11 @@
         let [w, h] = paperMap[sizeKey];
         if (orient === 'l') [w, h] = [h, w];
 
-        // PDF生成設定を動的に変更
+        const canvas = document.getElementById('main-canvas');
         const pdf = new jsPDF(orient, 'mm', [w, h]);
-        pdf.addImage(currentDataUrl, 'JPEG', 0, 0, w, h);
-        pdf.save(`scan_${sizeKey}_${orient === 'p' ? 'portrait' : 'landscape'}.pdf`);
+        // プレビューのキャンバスをそのままPDFに書き出す
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, w, h);
+        pdf.save(`scan_output.pdf`);
     };
 </script>
 </body>
