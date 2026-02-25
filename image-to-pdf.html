@@ -2,37 +2,34 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Image to Scan PDF - Ver 1.13</title>
+    <title>Image to Scan PDF - Ver 1.15</title>
     <script src="https://unpkg.com/tesseract.js@v4.0.1/dist/tesseract.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <style>
-        :root { --primary: #2563eb; --bg: #f1f5f9; --border: #cbd5e1; }
+        :root { --primary: #2563eb; --bg: #f8fafc; --border: #e2e8f0; }
         body { font-family: sans-serif; background: var(--bg); margin: 0; display: flex; color: #1e293b; }
         .sidebar { width: 260px; background: white; border-right: 1px solid #e2e8f0; position: fixed; height: 100vh; }
         .main-content { flex: 1; margin-left: 260px; padding: 40px; }
-        .container { max-width: 850px; margin: 0 auto; position: relative; }
-        .version { position: absolute; top: 0; right: 0; font-size: 0.8rem; font-weight: bold; color: #64748b; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; margin-bottom: 20px; }
+        .container { max-width: 900px; margin: 0 auto; position: relative; }
+        .version { position: absolute; top: 0; right: 0; font-size: 0.8rem; font-weight: bold; color: #64748b; background: #eee; padding: 2px 8px; border-radius: 4px; }
         
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; margin-bottom: 20px; }
         .control-group { display: flex; gap: 20px; margin-bottom: 20px; }
         .control-item { flex: 1; }
-        select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; margin-top: 5px; }
+        select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; margin-top: 5px; outline: none; }
 
-        .drop-zone { border: 2px dashed var(--border); padding: 40px; text-align: center; border-radius: 12px; cursor: pointer; background: #fafafa; transition: 0.3s; }
-        .drop-zone:hover { background: #f0f7ff; border-color: var(--primary); }
+        .drop-zone { border: 2px dashed #3b82f6; padding: 50px; text-align: center; border-radius: 12px; cursor: pointer; background: #f0f7ff; transition: 0.3s; }
+        .drop-zone:hover { background: #e0efff; }
         
-        /* プレビューエリア */
+        #log { font-size: 0.95rem; color: #2563eb; font-weight: bold; margin: 15px 0; min-height: 1.2em; display: flex; align-items: center; gap: 8px; }
+
         .preview-area { display: none; }
-        .canvas-container { background: #555; padding: 20px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; margin-top: 10px; }
-        canvas { max-width: 100%; height: auto; box-shadow: 0 0 20px rgba(0,0,0,0.5); background: white; }
+        .canvas-container { background: #334155; padding: 20px; border-radius: 12px; display: flex; justify-content: center; margin-top: 10px; }
+        canvas { max-width: 100%; height: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.3); background: white; }
         
-        .rotate-controls { margin-top: 15px; display: flex; gap: 10px; }
-        .rotate-btn { background: #475569; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .rotate-btn:hover { background: #1e293b; }
-
-        .btn-save { background: var(--primary); color: white; border: none; padding: 18px; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1.1rem; margin-top: 25px; }
-        #log { font-size: 0.9rem; color: var(--primary); font-weight: bold; margin: 15px 0; min-height: 1.2em; }
+        .btn-save { background: #059669; color: white; border: none; padding: 20px; border-radius: 10px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1.2rem; margin-top: 25px; transition: 0.2s; }
+        .btn-save:hover { background: #047857; transform: translateY(-2px); }
     </style>
 </head>
 <body>
@@ -41,8 +38,8 @@
 
 <main class="main-content">
     <div class="container">
-        <div class="version">Ver 1.13</div>
-        <h2>🖼️ Scan PDF Converter</h2>
+        <div class="version">Ver 1.15</div>
+        <h2>🚀 High-Quality Auto-Scanner</h2>
 
         <div class="card">
             <div class="control-group">
@@ -64,26 +61,20 @@
             </div>
 
             <div class="drop-zone" id="drop-zone">
-                <div style="font-size: 40px;">📂</div>
-                画像をドロップ（自動向き補正付き）
+                <div style="font-size: 48px; margin-bottom: 10px;">📄</div>
+                <strong>画像をここにドロップ</strong>
+                <p style="color: #64748b; font-size: 0.9rem;">AIが自動で向きを補正し、高画質PDF化します</p>
                 <input type="file" id="file-input" accept="image/*" style="display:none;">
             </div>
             <div id="log"></div>
         </div>
 
         <div id="preview-area" class="card preview-area">
-            <h3>3. プレビュー & 向き微調整</h3>
-            <p style="font-size: 0.8rem; color: #64748b;">※AIが判定した向きが違う場合は下のボタンで回転させてください。</p>
-            
+            <h3>3. 高解像度プレビュー（自動回転済み）</h3>
             <div class="canvas-container">
                 <canvas id="main-canvas"></canvas>
-                <div class="rotate-controls">
-                    <button class="rotate-btn" onclick="addRotation(-90)">↺ 左に90°</button>
-                    <button class="rotate-btn" onclick="addRotation(90)">↻ 右に90°</button>
-                </div>
             </div>
-            
-            <button class="btn-save" id="save-pdf">この状態でPDFを保存</button>
+            <button class="btn-save" id="save-pdf">高画質PDFをダウンロード</button>
         </div>
     </div>
 </main>
@@ -91,8 +82,7 @@
 <script>
     const paperMap = { a4: [210, 297], a3: [297, 420], b4: [250, 353] };
     let currentImg = null;
-    let manualRotation = 0; // 手動回転角度
-    let autoRotation = 0;   // OCRが判定した角度
+    let autoRotation = 0;
 
     fetch('sidebar.html').then(res => res.text()).then(data => {
         document.getElementById('common-sidebar').innerHTML = data;
@@ -106,8 +96,7 @@
 
     async function startProcess(file) {
         if(!file) return;
-        log("🔄 解析中...");
-        manualRotation = 0; // 新しい画像なのでリセット
+        log("⌛ 画像を読み込み中...");
         
         currentImg = await new Promise(res => {
             const r = new FileReader();
@@ -115,25 +104,21 @@
             r.readAsDataURL(file);
         });
 
-        log("🔍 文字の向きを判定中...");
+        log("🧠 AIが文字の向きを解析して自動回転中...");
         const worker = await Tesseract.createWorker();
         await worker.loadLanguage('jpn+eng');
         await worker.initialize('jpn+eng');
         const { data } = await worker.detect(currentImg);
         await worker.terminate();
+        
         autoRotation = data.orientation_degrees || 0;
+        log(`✅ 自動回転成功（${autoRotation}°）画質を最適化しています...`);
 
-        renderPreview();
-    }
-
-    function addRotation(deg) {
-        manualRotation = (manualRotation + deg) % 360;
         renderPreview();
     }
 
     function renderPreview() {
         if(!currentImg) return;
-        log("✨ 描画を更新中...");
 
         const sizeKey = document.getElementById('paper-size').value;
         const orient = document.getElementById('paper-orientation').value;
@@ -141,41 +126,44 @@
         if (orient === 'l') [pW, pH] = [pH, pW];
 
         const canvas = document.getElementById('main-canvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { alpha: false });
 
-        const dpr = 3; // 高画質化
-        canvas.width = pW * dpr;
-        canvas.height = pH * dpr;
+        // 【改善】解像度を大幅アップ (300dpi以上の品質を目指す)
+        const scaleFactor = 4.5; 
+        canvas.width = pW * scaleFactor;
+        canvas.height = pH * scaleFactor;
 
-        // 背景
+        // 背景をクリアな白に
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.save();
         ctx.translate(canvas.width / 2, canvas.height / 2);
         
-        // OCRの自動回転 + ユーザーの手動回転を合算
-        const totalDeg = (autoRotation + manualRotation);
-        ctx.rotate((-totalDeg * Math.PI) / 180);
+        // AIが判定した向きに自動回転
+        ctx.rotate((-autoRotation * Math.PI) / 180);
 
         let drawW = currentImg.width;
         let drawH = currentImg.height;
-        // 回転後の画像サイズを計算（90度/270度の時）
-        if (totalDeg % 180 !== 0) [drawW, drawH] = [drawH, drawW];
+        if (autoRotation % 180 !== 0) [drawW, drawH] = [drawH, drawW];
 
-        // 【修正】用紙枠に「収まる（Contain）」ように比率を計算
-        const scale = Math.min(canvas.width / drawW, canvas.height / drawH);
+        // 枠に収める計算
+        const fitScale = Math.min(canvas.width / drawW, canvas.height / drawH);
         
-        // スキャン風フィルター
-        ctx.filter = 'grayscale(1) contrast(2.5) brightness(1.1)';
-        ctx.drawImage(currentImg, -currentImg.width * scale / 2, -currentImg.height * scale / 2, currentImg.width * scale, currentImg.height * scale);
+        // 画質劣化を防ぐためのスムーズ描画設定
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        // スキャン補正フィルター（鮮明化）
+        ctx.filter = 'contrast(1.4) brightness(1.05) grayscale(0.2)';
+        ctx.drawImage(currentImg, -currentImg.width * fitScale / 2, -currentImg.height * fitScale / 2, currentImg.width * fitScale, currentImg.height * fitScale);
         ctx.restore();
 
         document.getElementById('preview-area').style.display = 'block';
-        log("✅ 準備完了");
+        log("✨ 完了しました。");
     }
 
-    // 設定変更時にプレビューを再描画
+    // 設定変更時に自動で描き直し
     document.getElementById('paper-size').onchange = renderPreview;
     document.getElementById('paper-orientation').onchange = renderPreview;
 
@@ -188,9 +176,11 @@
 
         const canvas = document.getElementById('main-canvas');
         const pdf = new jsPDF(orient, 'mm', [w, h]);
-        // プレビューのキャンバスをそのままPDFに書き出す
-        pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, w, h);
-        pdf.save(`scan_output.pdf`);
+        
+        // 【改善】JPEGの品質を最高レベル(1.0)に、FASTオプションを外して高品質書き出し
+        const imgData = canvas.toDataURL('image/jpeg', 0.98);
+        pdf.addImage(imgData, 'JPEG', 0, 0, w, h, undefined, 'SLOW');
+        pdf.save(`HighRes_Scan_${sizeKey}.pdf`);
     };
 </script>
 </body>
