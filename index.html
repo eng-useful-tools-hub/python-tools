@@ -7,7 +7,7 @@
     <style>
         :root {
             --primary: #2563eb;
-            --bg-color: #f8fafc;
+            --bg-color: #f1f5f9; /* 規約に合わせ微調整 */
             --card-bg: #ffffff;
             --text-main: #1e293b;
             --text-sub: #64748b;
@@ -45,7 +45,7 @@
 
         .container {
             width: 100%;
-            max-width: 1000px; /* カードが並びやすい幅 */
+            max-width: 1000px;
         }
 
         .header {
@@ -167,7 +167,7 @@
     <main class="main-content">
         <div class="container">
             <header class="header">
-                <span class="version-badge">Version 1.01</span>
+                <span class="version-badge">Version 1.10</span>
                 <h1>無料で使える便利なWebツール集</h1>
                 <p class="subtitle">インストール不要。ブラウザ上で全ての処理が完結するため、データが送信されず安全です。</p>
             </header>
@@ -180,6 +180,16 @@
                     <div class="tool-title">PDF分割ツール</div>
                     <div class="tool-desc">
                         大きなPDFファイルをページごとに分割、または指定した範囲で抽出します。機密文書も安全に処理可能です。
+                    </div>
+                    <div class="tool-link-text">ツールを開く <span>→</span></div>
+                </a>
+
+                <a href="image-to-pdf.html" class="tool-card active-tool">
+                    <div class="tool-icon">📑</div>
+                    <div class="tool-tag">JavaScript / Cropper.js</div>
+                    <div class="tool-title">Image to PDF Maker</div>
+                    <div class="tool-desc">
+                        複数の画像（写真）を1つのPDFにまとめます。影消し補正や自動フィット機能を搭載し、書類のデジタル化に最適です。
                     </div>
                     <div class="tool-link-text">ツールを開く <span>→</span></div>
                 </a>
