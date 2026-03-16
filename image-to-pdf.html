@@ -2,219 +2,236 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Multi-Scan PDF Converter - Ver 1.22</title>
+    <title>AI-Scan to PDF - Ver 1.23</title>
+    <script src="https://unpkg.com/tesseract.js@v4.0.1/dist/tesseract.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     
     <style>
-        :root { --primary: #2563eb; --success: #059669; --bg: #f8fafc; --sidebar-width: 260px; }
-        body { font-family: sans-serif; background: var(--bg); margin: 0; display: flex; color: #1e293b; min-height: 100vh; }
-        #sidebar-container { width: var(--sidebar-width); background: white; border-right: 1px solid #e2e8f0; position: fixed; height: 100vh; overflow-y: auto; z-index: 1000; }
+        :root { --primary: #2563eb; --success: #059669; --bg: #f8fafc; --text: #1e293b; --border: #e2e8f0; --sidebar-width: 260px; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; display: flex; color: var(--text); min-height: 100vh; }
+
+        #sidebar-container { width: var(--sidebar-width); background: white; border-right: 1px solid var(--border); position: fixed; height: 100vh; overflow-y: auto; z-index: 1000; }
         .main-content { flex: 1; margin-left: var(--sidebar-width); padding: 40px 20px; display: flex; justify-content: center; }
-        .container { max-width: 850px; width: 100%; position: relative; }
-        .version { position: absolute; top: 0; right: 0; font-size: 0.8rem; font-weight: bold; color: #94a3b8; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; margin-bottom: 20px; }
-        .option-group { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 15px 0; padding: 15px; background: #f1f5f9; border-radius: 8px; }
-        .option-item { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer; }
-        .drop-zone { border: 2px dashed #3b82f6; padding: 40px; text-align: center; border-radius: 12px; cursor: pointer; background: #f0f9ff; }
-        #file-list { margin-top: 20px; border-top: 1px solid #eee; }
-        .file-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; font-size: 0.85rem; }
-        .status-ready { color: var(--success); font-weight: bold; }
-        .crop-area { display: none; margin-top: 20px; }
-        .crop-container { width: 100%; max-height: 500px; background: #000; border-radius: 8px; overflow: hidden; }
-        .edit-toolbar { display: flex; gap: 10px; margin-bottom: 10px; }
-        .btn-tool { background: #475569; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: bold; }
-        .btn-action { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
-        .btn-pdf { background: var(--success); margin-top: 30px; font-size: 1.2rem; }
+        .container { max-width: 900px; width: 100%; position: relative; }
+        .version { position: absolute; top: 0; right: 0; font-size: 0.8rem; font-weight: bold; color: #94a3b8; padding: 2px 8px; border-radius: 4px; background: #eee; }
+        
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid var(--border); margin-bottom: 20px; }
+        
+        .drop-zone { border: 2px dashed var(--primary); padding: 50px; text-align: center; border-radius: 12px; cursor: pointer; background: #f0f7ff; transition: 0.3s; }
+        .drop-zone:hover { background: #e0f2fe; }
+
+        /* 複数プレビューエリア */
+        #preview-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; }
+        .preview-item { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: #fff; text-align: center; cursor: pointer; position: relative; }
+        .preview-item img { width: 100%; height: auto; display: block; }
+        .file-name { font-size: 0.8rem; color: #64748b; padding: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* 補正前後比較エリア */
+        .comparison-area { display: none; margin-top: 30px; padding-top: 20px; border-top: 2px solid var(--border); }
+        .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px; }
+        .comparison-box { text-align: center; }
+        .comparison-box h4 { margin: 0 0 10px 0; color: #64748b; font-size: 0.9rem; }
+        .img-wrap { width: 100%; aspect-ratio: 1/1.4; background: #eee; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); }
+        .img-wrap img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+        .btn-action { background: var(--success); color: white; border: none; padding: 20px; border-radius: 10px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1.2rem; margin-top: 30px; display: none; transition: 0.2s; }
+        .btn-action:hover { background: #047857; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(5,150,105,0.3); }
+        
+        #log-overlay { display: none; position: fixed; top: 0; left: var(--sidebar-width); right: 0; bottom: 0; background: rgba(0,0,0,0.7); color: white; z-index: 2000; align-items: center; justify-content: center; flex-direction: column; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div id="sidebar-container"></div>
+<div id="log-overlay"><div style="font-size:30px; margin-bottom:10px;">🧠</div> <span id="log-text">AIが解析中...</span></div>
 
 <main class="main-content">
     <div class="container">
-        <div class="version">Ver 1.22</div>
-        <h1 style="margin-top: 0; font-size: 1.5rem;">🖼️ Fixed-Ratio Scan PDF</h1>
+        <div class="version">Ver 1.23</div>
+        <h1 style="margin-top: 0; font-size: 1.75rem;">🖼️ AI-Powered Auto-Scanner</h1>
 
         <div class="card">
             <div style="display:flex; gap:15px; margin-bottom:15px;">
                 <div style="flex:1;">
                     <label style="font-size:0.8rem; font-weight:bold; color:#64748b;">用紙サイズ</label>
-                    <select id="paper-size" onchange="updateCropRatio()" style="width:100%; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
+                    <select id="paper-size" style="width:100%; padding:10px; border-radius:6px; border:1px solid var(--border);">
                         <option value="a4">A4</option><option value="a3">A3</option><option value="b4" selected>B4</option>
                     </select>
                 </div>
                 <div style="flex:1;">
                     <label style="font-size:0.8rem; font-weight:bold; color:#64748b;">用紙の向き</label>
-                    <select id="paper-orientation" onchange="updateCropRatio()" style="width:100%; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
-                        <option value="p">縦向き (Portrait)</option>
-                        <option value="l" selected>横向き (Landscape)</option>
+                    <select id="paper-orientation" style="width:100%; padding:10px; border-radius:6px; border:1px solid var(--border);">
+                        <option value="p">縦向き</option><option value="l" selected>横向き</option>
                     </select>
                 </div>
             </div>
 
-            <label style="font-size:0.8rem; font-weight:bold; color:#64748b;">補正オプション:</label>
-            <div class="option-group">
-                <label class="option-item"><input type="checkbox" id="opt-shadow" checked> 照明ムラ除去</label>
-                <label class="option-item"><input type="checkbox" id="opt-binary" checked> 文字強調(スキャン風)</label>
-                <label class="option-item"><input type="checkbox" id="opt-sharp" checked> 鮮明化処理</label>
-            </div>
-
             <div class="drop-zone" id="drop-zone">
-                <div style="font-size: 32px;">📥</div>
-                <strong>複数画像をドロップして開始</strong>
+                <div style="font-size: 40px;">📂</div>
+                <strong>複数画像をドロップして完全自動補正</strong>
+                <p style="font-size: 0.85rem; color: #64748b; margin-top: 5px;">AIが向きを自動修正し、背景をきれいに飛ばします</p>
                 <input type="file" id="file-input" multiple accept="image/*" style="display:none;">
             </div>
 
-            <div id="file-list"></div>
-            <button class="btn-action btn-pdf" id="download-pdf" style="display:none;">すべての画像を1つのPDFに結合保存</button>
+            <div id="preview-list"></div>
+            <button class="btn-action" id="download-pdf">すべての画像をまとめてPDF保存</button>
         </div>
 
-        <div id="crop-area" class="card crop-area">
-            <h3 id="editing-filename" style="margin-top:0; font-size:1.1rem;">範囲の調整（比率固定中）</h3>
-            
-            <div class="edit-toolbar">
-                <button class="btn-tool" id="rotate-left">↺ 左に90°</button>
-                <button class="btn-tool" id="rotate-right">↻ 右に90°</button>
-                <span style="font-size: 0.8rem; color: #64748b; margin-left: auto;">※選択サイズに合わせて比率を固定しています</span>
+        <div id="comparison-area" class="card comparison-area">
+            <h3>🎨 補正プレビュー（選択中: <span id="current-filename"></span>）</h3>
+            <div class="comparison-grid">
+                <div class="comparison-box">
+                    <h4>補正前（元画像）</h4>
+                    <div class="img-wrap"><img id="comp-orig"></div>
+                </div>
+                <div class="comparison-box">
+                    <h4>補正後（自動回転＋スキャン）</h4>
+                    <div class="img-wrap"><img id="comp-proc"></div>
+                </div>
             </div>
-
-            <div class="crop-container"><img id="crop-target"></div>
-            <button class="btn-action" id="apply-crop">この画像を確定して次へ</button>
         </div>
     </div>
 </main>
 
 <script>
-    let cropper = null;
-    let filesQueue = [];
-    let processedImages = [];
-    let currentFileIndex = 0;
+    let processedImagesData = []; // {orig: base64, proc: base64, name: string} の配列
     const paperMap = { a4: [210, 297], a3: [297, 420], b4: [250, 353] };
 
+    // サイドバー読込
     fetch('sidebar.html').then(res => res.text()).then(html => document.getElementById('sidebar-container').innerHTML = html);
 
     const fileInput = document.getElementById('file-input');
     const dropZone = document.getElementById('drop-zone');
+    const logOverlay = document.getElementById('log-overlay');
+    const logText = document.getElementById('log-text');
 
     dropZone.onclick = () => fileInput.click();
     fileInput.onchange = (e) => handleFiles(e.target.files);
     dropZone.ondragover = (e) => e.preventDefault();
     dropZone.ondrop = (e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); };
 
-    function handleFiles(files) {
-        filesQueue = Array.from(files);
-        processedImages = [];
-        currentFileIndex = 0;
-        updateFileList();
-        if (filesQueue.length > 0) startEditing(0);
-    }
+    function showLog(msg) { logOverlay.style.display = 'flex'; logText.innerText = msg; }
+    function hideLog() { logOverlay.style.display = 'none'; }
 
-    // ★比率を計算してCropperに反映させる関数
-    function updateCropRatio() {
-        if (!cropper) return;
-        const sizeKey = document.getElementById('paper-size').value;
-        const orient = document.getElementById('paper-orientation').value;
-        let [w, h] = paperMap[sizeKey];
-        const ratio = (orient === 'p') ? w / h : h / w;
-        cropper.setAspectRatio(ratio);
-    }
-
-    function updateFileList() {
-        const list = document.getElementById('file-list');
-        list.innerHTML = "";
-        filesQueue.forEach((f, i) => {
-            const status = i < processedImages.length ? '<span class="status-ready">✅ 完了</span>' : (i === currentFileIndex ? '⏳ 処理中' : '⚪ 待機');
-            list.innerHTML += `<div class="file-item"><span>${f.name}</span>${status}</div>`;
-        });
-    }
-
-    function startEditing(index) {
-        if (index >= filesQueue.length) {
-            document.getElementById('crop-area').style.display = 'none';
-            document.getElementById('download-pdf').style.display = 'block';
-            return;
-        }
-        document.getElementById('crop-area').style.display = 'block';
-        document.getElementById('editing-filename').innerText = `調整中 (${index+1}/${filesQueue.length}): ${filesQueue[index].name}`;
+    async function handleFiles(files) {
+        if (!files.length) return;
+        showLog("⌛ 複数の画像をAIで解析中...");
+        processedImagesData = [];
+        document.getElementById('preview-list').innerHTML = "";
         
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = document.getElementById('crop-target');
-            img.src = e.target.result;
-            if (cropper) cropper.destroy();
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const percent = Math.round((i / files.length) * 100);
+            showLog(`⌛ ${files.length}枚中 ${i+1}枚目を補正中... (${percent}%)`);
+            
+            const origImg = await loadImage(file);
+            
+            // 1. OCRで文字の向きを自動判定
+            const worker = await Tesseract.createWorker();
+            await worker.loadLanguage('jpn+eng');
+            await worker.initialize('jpn+eng');
+            const { data } = await worker.detect(origImg);
+            await worker.terminate();
+            const deg = data.orientation_degrees || 0;
 
-            // 初期化時に比率をセット
+            // 2. 回転＆スキャン風補正
             const sizeKey = document.getElementById('paper-size').value;
             const orient = document.getElementById('paper-orientation').value;
-            let [w, h] = paperMap[sizeKey];
-            const ratio = (orient === 'p') ? w / h : h / w;
+            const processedBase64 = await processAutoScan(origImg, deg, sizeKey, orient);
             
-            cropper = new Cropper(img, {
-                aspectRatio: ratio,
-                viewMode: 1,
-                autoCropArea: 0.9,
-                background: false,
-            });
-        };
-        reader.readAsDataURL(filesQueue[index]);
+            processedImagesData.push({ orig: origImg.src, proc: processedBase64, name: file.name });
+            addPreview(processedBase64, i, file.name);
+        }
+        
+        hideLog();
+        document.getElementById('download-pdf').style.display = 'block';
     }
 
-    document.getElementById('rotate-left').onclick = () => cropper.rotate(-90);
-    document.getElementById('rotate-right').onclick = () => cropper.rotate(90);
+    function loadImage(file) {
+        return new Promise(res => {
+            const r = new FileReader();
+            r.onload = e => { const i = new Image(); i.onload = () => res(i); i.src = e.target.result; };
+            r.readAsDataURL(file);
+        });
+    }
 
-    document.getElementById('apply-crop').onclick = () => {
-        const sizeKey = document.getElementById('paper-size').value;
-        const orient = document.getElementById('paper-orientation').value;
+    async function processAutoScan(img, deg, sizeKey, orient) {
         let [pW, pH] = paperMap[sizeKey];
         if (orient === 'l') [pW, pH] = [pH, pW];
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const scale = 3.5; // 高解像度 (300dpi相当)
+        canvas.width = pW * scale;
+        canvas.height = pH * scale;
+
+        // 背景をクリアな白に
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
         
-        // 固定された比率でキャンバスを生成（高画質）
-        const canvas = cropper.getCroppedCanvas({ 
-            width: pW * 3.5,
-            imageSmoothingQuality: 'high'
-        });
+        // AIが判定した向きに自動回転 (degrees分だけ「逆転」させる)
+        ctx.rotate((-deg * Math.PI) / 180);
 
-        const shadow = document.getElementById('opt-shadow').checked;
-        const binary = document.getElementById('opt-binary').checked;
-        const sharp = document.getElementById('opt-sharp').checked;
+        let imgW = img.width;
+        let imgH = img.height;
+        if (deg % 180 !== 0) [imgW, imgH] = [imgH, imgW];
 
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = canvas.width; tempCanvas.height = canvas.height;
-        const tCtx = tempCanvas.getContext('2d');
+        // フィットロジック (余白なしで用紙全面に Cover 配置)
+        const ratio = Math.max(canvas.width / imgW, canvas.height / imgH);
         
-        let filterStr = "";
-        if (shadow) filterStr += "brightness(1.08) ";
-        if (binary) filterStr += "grayscale(1) contrast(2.2) ";
-        if (sharp) filterStr += "saturate(0) contrast(1.1) ";
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        
+        // 【修正】白けるのを防ぐマイルドなフィルター（文字の濃さを維持）
+        // グレースケール化 -> コントラスト弱め -> 明るさ微増
+        ctx.filter = 'grayscale(1) contrast(1.2) brightness(1.05)';
+        
+        ctx.drawImage(img, -img.width * ratio / 2, -img.height * ratio / 2, img.width * ratio, img.height * ratio);
+        ctx.restore();
 
-        tCtx.filter = filterStr || 'none';
-        tCtx.drawImage(canvas, 0, 0);
+        return canvas.toDataURL('image/jpeg', 0.85);
+    }
 
-        processedImages.push(tempCanvas.toDataURL('image/jpeg', 0.95));
-        currentFileIndex++;
-        updateFileList();
-        startEditing(currentFileIndex);
-    };
+    function addPreview(base64, index, filename) {
+        const list = document.getElementById('preview-list');
+        const item = document.createElement('div');
+        item.className = 'preview-item';
+        item.innerHTML = `<img src="${base64}"><div class="file-name">${filename}</div>`;
+        item.onclick = () => showComparison(index);
+        list.appendChild(item);
+    }
+
+    function showComparison(index) {
+        const data = processedImagesData[index];
+        document.getElementById('current-filename').innerText = data.name;
+        document.getElementById('comp-orig').src = data.orig;
+        document.getElementById('comp-proc').src = data.proc;
+        document.getElementById('comparison-area').style.display = 'block';
+    }
+
+    document.getElementById('paper-size').onchange = () => { if(processedImagesData.length > 0) handleFiles(document.getElementById('file-input').files); };
+    document.getElementById('paper-orientation').onchange = () => { if(processedImagesData.length > 0) handleFiles(document.getElementById('file-input').files); };
 
     document.getElementById('download-pdf').onclick = () => {
         const { jsPDF } = window.jspdf;
-        const orient = document.getElementById('paper-orientation').value;
         const sizeKey = document.getElementById('paper-size').value;
-        const [pW, pH] = paperMap[sizeKey];
+        const orient = document.getElementById('paper-orientation').value;
+        const [w, h] = paperMap[sizeKey];
         const pdf = new jsPDF(orient, 'mm', sizeKey);
 
-        processedImages.forEach((data, i) => {
+        processedImagesData.forEach((data, i) => {
             if (i > 0) pdf.addPage(sizeKey, orient);
-            const w = pdf.internal.pageSize.getWidth();
-            const h = pdf.internal.pageSize.getHeight();
-            pdf.addImage(data, 'JPEG', 0, 0, w, h);
+            const pW = pdf.internal.pageSize.getWidth();
+            const pH = pdf.internal.pageSize.getHeight();
+            pdf.addImage(data.proc, 'JPEG', 0, 0, pW, pH);
         });
 
-        pdf.save(`Scanned_B4_Fixed.pdf`);
+        pdf.save("AI_Scanned_B4_Combined.pdf");
     };
 </script>
+
 </body>
 </html>
