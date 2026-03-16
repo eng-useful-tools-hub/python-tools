@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Smart PDF Scanner - Ver 1.34</title>
+    <title>Smart PDF Scanner - Ver 1.35</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
@@ -24,7 +24,7 @@
         
         .workspace { display: grid; grid-template-columns: 180px 1fr; gap: 20px; margin-top: 20px; display: none; }
         .file-list { display: flex; flex-direction: column; gap: 10px; max-height: 600px; overflow-y: auto; }
-        .thumb-item { border: 2px solid transparent; border-radius: 8px; cursor: pointer; background: #fff; overflow: hidden; position: relative; }
+        .thumb-item { border: 2px solid transparent; border-radius: 8px; cursor: pointer; background: #fff; overflow: hidden; position: relative; transition: 0.2s; }
         .thumb-item.active { border-color: var(--primary); box-shadow: 0 0 10px rgba(37,99,235,0.2); }
         .thumb-item img { width: 100%; aspect-ratio: 1/1.4; object-fit: contain; background: #eee; display: block; }
         .thumb-status { position: absolute; top: 3px; right: 3px; background: var(--success); color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; display: flex; align-items: center; justify-content: center; }
@@ -50,29 +50,29 @@
 
 <main class="main-content">
     <div class="container">
-        <div class="version">Ver 1.34</div>
+        <div class="version">Ver 1.35</div>
         <h1 style="margin-top: 0; font-size: 1.8rem; color: #0f172a;">📑 Smart PDF Scanner</h1>
         <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 25px;">
-            各画像の設定（向き、補正、範囲）は個別に保存されます。同期ボタンを押すと、選択中の用紙比率に合わせて書類範囲を自動でフィットさせます。
+            画像ごとに向き・範囲・補正設定を保持します。最大30枚まで読み込み可能です。画像を切り替える際、現在の設定は自動的に保存されます。
         </p>
 
         <div class="card">
             <div class="config-group">
                 <div class="config-item">
                     <label>共通：出力用紙サイズ</label>
-                    <select id="paper-size" onchange="updateCropRatio()">
+                    <select id="paper-size" onchange="updateCropRatioForAll()">
                         <option value="a4">A4</option><option value="a3">A3</option><option value="b4" selected>B4</option>
                     </select>
                 </div>
                 <div class="config-item">
                     <label>共通：用紙の向き</label>
-                    <select id="paper-orientation" onchange="updateCropRatio()">
+                    <select id="paper-orientation" onchange="updateCropRatioForAll()">
                         <option value="p">縦向き (Portrait)</option><option value="l" selected>横向き (Landscape)</option>
                     </select>
                 </div>
             </div>
             <div class="drop-zone" id="drop-zone">
-                <strong>ここに写真をドロップ（複数可）</strong>
+                <strong>ここに写真をドロップ（最大30枚）</strong>
                 <input type="file" id="file-input" multiple accept="image/*" style="display:none;">
             </div>
         </div>
@@ -90,9 +90,9 @@
                         </div>
                         <div class="correction-list">
                             <label class="check-item"><input type="checkbox" id="opt-trap" checked onchange="toggleCropper()"> 台形補正</label>
-                            <label class="check-item"><input type="checkbox" id="opt-bw" checked onchange="saveCurrentSettings()"> 白黒補正</label>
-                            <label class="check-item"><input type="checkbox" id="opt-sharp" onchange="saveCurrentSettings()"> シャープ</label>
-                            <label class="check-item"><input type="checkbox" id="opt-white" checked onchange="saveCurrentSettings()"> 背景白飛</label>
+                            <label class="check-item"><input type="checkbox" id="opt-bw" checked onchange="recordCurrentSettings()"> 白黒補正</label>
+                            <label class="check-item"><input type="checkbox" id="opt-sharp" onchange="recordCurrentSettings()"> シャープ</label>
+                            <label class="check-item"><input type="checkbox" id="opt-white" checked onchange="recordCurrentSettings()"> 背景白飛</label>
                         </div>
                         <button class="btn-confirm" onclick="applyAndNext()">確定</button>
                     </div>
@@ -104,7 +104,10 @@
 </main>
 
 <script>
-    let filesData = []; let activeIdx = -1; let cropper = null;
+    let filesData = []; 
+    let activeIdx = -1; 
+    let cropper = null;
+    const MAX_FILES = 30;
     const paperMap = { a4: [210, 297], a3: [297, 420], b4: [250, 353] };
 
     fetch('sidebar.html').then(res => res.text()).then(html => document.getElementById('sidebar-container').innerHTML = html);
@@ -114,7 +117,11 @@
 
     async function handleFiles(files) {
         if (!files.length) return;
-        for (let file of files) {
+        const currentTotal = filesData.length;
+        const remaining = MAX_FILES - currentTotal;
+        const filesToProcess = Array.from(files).slice(0, remaining);
+
+        for (let file of filesToProcess) {
             const img = await new Promise(res => {
                 const r = new FileReader();
                 r.onload = e => { const i = new Image(); i.onload = () => res(i); i.src = e.target.result; };
@@ -122,11 +129,14 @@
             });
             filesData.push({ 
                 orig: img, name: file.name, proc: null, 
-                settings: { trap:true, bw:true, sharp:false, white:true, deg:0, crop:null } 
+                settings: { trap:true, bw:true, sharp:false, white:true, deg:0, cropData:null } 
             });
         }
-        document.getElementById('workspace').style.display = 'grid';
-        renderThumbnails(); openEditor(filesData.length - files.length);
+        if (filesData.length > 0) {
+            document.getElementById('workspace').style.display = 'grid';
+            renderThumbnails(); 
+            openEditor(currentTotal); 
+        }
     }
 
     function renderThumbnails() {
@@ -135,7 +145,10 @@
             const item = document.createElement('div');
             item.className = `thumb-item ${i === activeIdx ? 'active' : ''}`;
             item.innerHTML = `<img src="${data.orig.src}">${data.proc ? '<div class="thumb-status">✓</div>' : ''}`;
-            item.onclick = () => { saveCurrentSettings(); openEditor(i); }; 
+            item.onclick = () => { 
+                recordCurrentSettings(); // 切り替え前に保存
+                openEditor(i); 
+            }; 
             list.appendChild(item);
         });
         document.getElementById('download-pdf').style.display = filesData.some(d => d.proc) ? 'block' : 'none';
@@ -143,11 +156,12 @@
 
     function openEditor(idx) {
         if (cropper) cropper.destroy();
-        activeIdx = idx; const data = filesData[idx];
+        activeIdx = idx; 
+        const data = filesData[idx];
         const img = document.getElementById('stage-image');
         img.src = data.orig.src;
 
-        // 保存された設定をUIに戻す
+        // UI設定の復元
         document.getElementById('opt-trap').checked = data.settings.trap;
         document.getElementById('opt-bw').checked = data.settings.bw;
         document.getElementById('opt-sharp').checked = data.settings.sharp;
@@ -159,10 +173,17 @@
             const ratio = (orient === 'p') ? paperMap[sizeKey][0]/paperMap[sizeKey][1] : paperMap[sizeKey][1]/paperMap[sizeKey][0];
             
             cropper = new Cropper(img, { 
-                aspectRatio: ratio, viewMode: 1, background: false,
-                data: data.settings.crop, // 保存された範囲を復元
+                aspectRatio: ratio, 
+                viewMode: 1, 
+                background: false,
+                autoCropArea: 0.9,
                 ready() {
-                    cropper.rotate(data.settings.deg); // 保存された回転を復元
+                    // 回転の復元
+                    if (data.settings.deg !== 0) cropper.rotate(data.settings.deg);
+                    // クロップ範囲の復元
+                    if (data.settings.cropData) {
+                        cropper.setData(data.settings.cropData);
+                    }
                     if (!data.settings.trap) cropper.disable();
                 }
             });
@@ -171,7 +192,8 @@
         document.querySelectorAll('.thumb-item').forEach((it, i) => it.classList.toggle('active', i === idx));
     }
 
-    function saveCurrentSettings() {
+    // 現在の状態を配列に即時反映させる関数
+    function recordCurrentSettings() {
         if (!cropper || activeIdx < 0) return;
         filesData[activeIdx].settings = {
             trap: document.getElementById('opt-trap').checked,
@@ -179,46 +201,43 @@
             sharp: document.getElementById('opt-sharp').checked,
             white: document.getElementById('opt-white').checked,
             deg: cropper.getData().rotate,
-            crop: cropper.getData()
+            cropData: cropper.getData()
         };
     }
 
-    function rotateImage(deg) { if (cropper) cropper.rotate(deg); saveCurrentSettings(); }
+    function rotateImage(val) { if (cropper) { cropper.rotate(val); recordCurrentSettings(); } }
 
     function toggleCropper() {
-        const isTrap = document.getElementById('opt-trap').checked;
-        if (isTrap) cropper.enable(); else cropper.disable();
-        saveCurrentSettings();
+        if (!cropper) return;
+        if (document.getElementById('opt-trap').checked) cropper.enable(); else cropper.disable();
+        recordCurrentSettings();
     }
 
-    // ★改善：用紙の向きを変えず、比率に画像をフィットさせる
     function smartFitToPaper() {
         if (!cropper) return;
         const canvasData = cropper.getCanvasData();
-        const containerData = cropper.getContainerData();
-        
-        // 画面中央に最大サイズで配置
         cropper.setCropBoxData({
             left: canvasData.left + (canvasData.width * 0.1),
             top: canvasData.top + (canvasData.height * 0.1),
             width: canvasData.width * 0.8,
             height: canvasData.height * 0.8
         });
-        saveCurrentSettings();
+        recordCurrentSettings();
     }
 
-    function updateCropRatio() {
+    function updateCropRatioForAll() {
         if (!cropper) return;
         const sizeKey = document.getElementById('paper-size').value;
         const orient = document.getElementById('paper-orientation').value;
         const ratio = (orient === 'p') ? paperMap[sizeKey][0]/paperMap[sizeKey][1] : paperMap[sizeKey][1]/paperMap[sizeKey][0];
         cropper.setAspectRatio(ratio);
-        saveCurrentSettings();
+        recordCurrentSettings();
     }
 
     async function applyAndNext() {
         if (!cropper) return;
-        saveCurrentSettings();
+        recordCurrentSettings(); // 確定時にも保存
+        
         const sizeKey = document.getElementById('paper-size').value;
         const orient = document.getElementById('paper-orientation').value;
         let [pW, pH] = (orient === 'p') ? paperMap[sizeKey] : [paperMap[sizeKey][1], paperMap[sizeKey][0]];
@@ -238,7 +257,10 @@
 
         filesData[activeIdx].proc = finalCanvas.toDataURL('image/jpeg', 0.9);
         renderThumbnails();
-        if (activeIdx < filesData.length - 1) openEditor(activeIdx + 1);
+        
+        if (activeIdx < filesData.length - 1) {
+            openEditor(activeIdx + 1);
+        }
     }
 
     document.getElementById('download-pdf').onclick = () => {
@@ -254,7 +276,7 @@
                 added++;
             }
         });
-        pdf.save(`Scan_Combined_Ver1.34.pdf`);
+        pdf.save(`Scan_Combined_Ver1.35.pdf`);
     };
 </script>
 </body>
