@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart PDF Scanner - Ver 1.54</title>
+    <title>Smart PDF Scanner - Ver 1.55</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
@@ -15,7 +15,6 @@
         /* サイドバー (sidebar.html参照用) */
         #pc-sidebar { width: var(--sidebar-width); background: white; border-right: 1px solid #e2e8f0; height: 100vh; display: flex; flex-direction: column; flex-shrink: 0; }
 
-        /* メインコンテンツ */
         .main-content { flex: 1; padding: 10px 20px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; overflow-y: auto; }
         .container { max-width: 1200px; width: 100%; margin: 0 auto; position: relative; display: flex; flex-direction: column; min-height: 100%; }
         .version { position: absolute; top: 0; right: 0; font-size: 0.7rem; font-weight: bold; color: #94a3b8; padding: 2px 8px; border-radius: 4px; background: #eee; }
@@ -26,43 +25,57 @@
         
         .top-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 10px; }
         .card-mini { background: white; padding: 6px 10px; border-radius: 6px; border: 1px solid #e2e8f0; }
-        select { width: 100%; padding: 4px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 0.8rem; }
+        select { width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 0.85rem; }
         label { font-size: 0.6rem; font-weight: bold; color: #64748b; display: block; }
 
-        /* ワークスペース */
         .workspace { display: grid; grid-template-columns: 180px 1fr; gap: 15px; flex: 1; min-height: 0; display: none; margin-bottom: 10px; }
         .file-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; background: #e5eaf0; padding: 10px; border-radius: 8px; border: 1px solid var(--border); }
-        .thumb-item { border: 3px solid #cbd5e1; border-radius: 6px; cursor: pointer; background: #fff; position: relative; padding: 2px; flex-shrink: 0; }
+        .thumb-item { border: 3px solid #cbd5e1; border-radius: 6px; cursor: pointer; background: #fff; position: relative; padding: 2px; flex-shrink: 0; transition: border-color 0.2s; }
         .thumb-item.active { border-color: var(--primary); }
-        .thumb-item img { width: 100%; aspect-ratio: 1.4/1; object-fit: contain; background: #eee; display: block; }
-        .thumb-status { position: absolute; top: -6px; right: -6px; background: var(--success); color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white; }
+        .thumb-item img { width: 100%; aspect-ratio: 1.4/1; object-fit: contain; background: #eee; display: block; border-radius: 3px; }
+        .thumb-info { font-size: 0.7rem; text-align: center; color: #475569; margin-top: 3px; font-weight: bold; }
+        .thumb-status { position: absolute; top: -6px; right: -6px; background: var(--success); color: white; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.2); z-index: 5; }
 
-        /* PC版：プレビューサイズを制限 */
         .editor-main { background: white; border-radius: 8px; border: 1px solid var(--border); padding: 10px; display: flex; flex-direction: column; }
         .stage-wrap { height: 450px; background: #0f172a; border-radius: 6px; overflow: hidden; margin-bottom: 8px; position: relative; display: flex; align-items: center; justify-content: center; }
         #stage-image { display: block; max-width: 100%; max-height: 100%; }
 
-        /* 操作パネル */
         .correction-panel { background: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; }
         .controls-flex { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
-        .btn-tool { background: #475569; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
+        .btn-tool { background: #475569; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
         .btn-confirm { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         
-        /* 補正リスト */
         .correction-list { display: flex; flex-wrap: wrap; gap: 8px; }
         .check-item { display: flex; align-items: center; gap: 3px; font-size: 0.7rem; font-weight: bold; cursor: pointer; background: #fff; padding: 2px 6px; border-radius: 4px; border: 1px solid #ddd; }
 
         .btn-pdf { background: var(--success); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1rem; display: none; margin-top: 10px; }
         .disclaimer { font-size: 10px; color: #94a3b8; text-align: center; padding: 15px 0; line-height: 1.4; border-top: 1px solid #e2e8f0; background: #fff; }
 
-        /* スマホ用レスポンシブ */
+        /* ★ スマホ用レスポンシブ最適化 */
         @media (max-width: 768px) {
             #pc-sidebar { display: none; }
+            body { overflow-y: auto; height: auto; }
             .main-content { padding: 10px; height: auto; overflow: visible; }
             .workspace { grid-template-columns: 1fr; display: flex; flex-direction: column; }
-            .file-list { flex-direction: row; overflow-x: auto; height: 90px; }
-            .thumb-item { width: 100px; }
-            .stage-wrap { height: 35vh; min-height: 220px; }
+            
+            /* サムネイルの縦サイズを大きく改善 */
+            .file-list { 
+                flex-direction: row; 
+                overflow-x: auto; 
+                overflow-y: hidden;
+                height: 130px; /* ここを大きくしました */
+                padding: 10px; 
+                align-items: center;
+                border-bottom: 2px solid var(--border);
+            }
+            .thumb-item { 
+                width: 140px; /* 横幅も少し拡張 */
+                height: 100px; 
+                margin-right: 10px; 
+            }
+            .thumb-item img { height: 75px; } /* 画像自体の高さも確保 */
+            
+            .stage-wrap { height: 38vh; min-height: 250px; }
             .controls-flex { flex-direction: column; align-items: stretch; }
             .correction-list { justify-content: center; }
         }
@@ -70,16 +83,15 @@
 </head>
 <body>
 
-<aside id="pc-sidebar">
-    </aside>
+<aside id="pc-sidebar"></aside>
 
 <main class="main-content">
     <div class="container">
-        <div class="version">Ver 1.54</div>
+        <div class="version">Ver 1.55</div>
         <h1>📑 Smart PDF Scanner</h1>
 
         <div class="guide-box">
-            <p>・複数の画像を1つのPDFに統合します。ノイズ除去やシャープ化で読みやすく補正可能です。</p>
+            <p>・複数の画像を1つのPDFに統合します。ノイズ除去や強調等で画質補正可能です。</p>
         </div>
         
         <button class="btn-tool" style="background:var(--danger); margin-bottom:10px;" onclick="resetAll()">全てのデータを初期化</button>
@@ -88,7 +100,7 @@
             <div class="card-mini"><label>用紙サイズ</label><select id="paper-size" onchange="updateRatio()"><option value="a4">A4</option><option value="a3">A3</option><option value="b4" selected>B4</option></select></div>
             <div class="card-mini"><label>向き</label><select id="paper-orientation" onchange="updateRatio()"><option value="p">縦</option><option value="l" selected>横</option></select></div>
             <div id="drop-zone" class="card-mini" style="border: 2px dashed var(--primary); background: #f0f9ff; cursor: pointer; display: flex; align-items: center; justify-content: center; text-align: center;">
-                <span style="font-size: 0.7rem; font-weight: bold; color: var(--primary);">📥 画像を追加</span>
+                <span style="font-size: 0.75rem; font-weight: bold; color: var(--primary);">📥 画像を追加</span>
             </div>
             <input type="file" id="file-input" multiple accept="image/*" style="display:none;">
         </div>
@@ -107,7 +119,7 @@
                         <div class="correction-list">
                             <label class="check-item"><input type="checkbox" id="opt-bw" checked onchange="updatePreview()">白黒</label>
                             <label class="check-item"><input type="checkbox" id="opt-white" checked onchange="updatePreview()">背景白</label>
-                            <label class="check-item"><input type="checkbox" id="opt-denoise" onchange="updatePreview()">ノイズ除去</label>
+                            <label class="check-item"><input type="checkbox" id="opt-denoise" onchange="updatePreview()">ノイズ</label>
                             <label class="check-item"><input type="checkbox" id="opt-contrast" onchange="updatePreview()">強調</label>
                             <label class="check-item"><input type="checkbox" id="opt-sharp" onchange="updatePreview()">シャープ</label>
                         </div>
@@ -132,7 +144,7 @@
     fetch('sidebar.html').then(res => res.text()).then(html => {
         document.getElementById('pc-sidebar').innerHTML = html;
     }).catch(() => {
-        document.getElementById('pc-sidebar').innerHTML = '<div style="padding:20px;">サイドバーを読み込めませんでした。</div>';
+        document.getElementById('pc-sidebar').innerHTML = '<div style="padding:20px;">Menu</div>';
     });
 
     document.getElementById('drop-zone').onclick = () => document.getElementById('file-input').click();
@@ -169,6 +181,11 @@
         const btn = document.getElementById('download-pdf-btn');
         btn.innerText = `${count}枚をPDF保存`;
         btn.style.display = count > 0 ? 'block' : 'none';
+        
+        if (activeIdx >= 0) {
+            const el = document.getElementById(`thumb-${activeIdx}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
     }
 
     function openEditor(idx) {
@@ -223,8 +240,7 @@
         if (wh) filter += "contrast(1.1) brightness(1.05) ";
         if (c) filter += "contrast(1.4) ";
         if (s) filter += "contrast(1.1) brightness(1.1) saturate(0) ";
-        if (d) filter += "blur(0.3px) "; // 簡易ノイズ除去
-
+        if (d) filter += "blur(0.3px) ";
         const wrap = document.querySelector('.cropper-container');
         if (wrap) wrap.style.filter = filter || "none";
         saveSettings();
@@ -259,14 +275,12 @@
         final.width = canv.width; final.height = canv.height;
         const ctx = final.getContext('2d');
         const set = filesData[activeIdx].settings;
-        
         let f = "";
         if (set.bw) f += "grayscale(1) ";
         if (set.white) f += "contrast(1.1) brightness(1.05) ";
         if (set.contrast) f += "contrast(1.4) ";
         if (set.sharp) f += "contrast(1.1) brightness(1.1) saturate(0) ";
         if (set.denoise) f += "blur(0.3px) ";
-        
         ctx.filter = f || "none";
         ctx.drawImage(canv, 0, 0);
         filesData[activeIdx].proc = final.toDataURL('image/jpeg', 0.9);
@@ -281,7 +295,7 @@
         const pdf = new jsPDF(o, 'mm', s);
         let added = 0;
         filesData.forEach((d) => { if (d.proc) { if (added > 0) pdf.addPage(s, o); pdf.addImage(d.proc, 'JPEG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight()); added++; } });
-        if (added > 0) pdf.save(`Scan_Combined_v1.54.pdf`);
+        if (added > 0) pdf.save(`Scan_Combined_v1.55.pdf`);
     };
 </script>
 </body>
