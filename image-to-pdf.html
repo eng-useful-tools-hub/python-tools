@@ -3,29 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart PDF Scanner - Ver 1.52</title>
+    <title>Smart PDF Scanner - Ver 1.53</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     
     <style>
-        :root { --primary: #2563eb; --success: #059669; --danger: #dc2626; --warning: #fff7ed; --bg: #f1f5f9; --text: #1e293b; --border: #cbd5e1; }
+        :root { --primary: #2563eb; --success: #059669; --danger: #dc2626; --warning: #fff7ed; --bg: #f1f5f9; --text: #1e293b; --border: #cbd5e1; --sidebar-width: 260px; }
         body { font-family: sans-serif; background: var(--bg); margin: 0; display: flex; color: var(--text); height: 100vh; overflow: hidden; }
         
-        /* メイン構成 */
-        .main-content { flex: 1; padding: 10px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; overflow-y: auto; }
+        /* PC用サイドバー */
+        #pc-sidebar { width: var(--sidebar-width); background: white; border-right: 1px solid #e2e8f0; height: 100vh; display: flex; flex-direction: column; flex-shrink: 0; }
+        .sidebar-nav { padding: 20px; border-bottom: 1px solid #eee; }
+        .nav-link { display: flex; align-items: center; gap: 8px; color: var(--text); text-decoration: none; font-weight: bold; font-size: 0.9rem; padding: 10px; border-radius: 6px; transition: background 0.2s; }
+        .nav-link:hover { background: #f1f5f9; color: var(--primary); }
+
+        /* メインコンテンツ */
+        .main-content { flex: 1; padding: 10px 20px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; overflow-y: auto; }
         .container { max-width: 1200px; width: 100%; margin: 0 auto; position: relative; display: flex; flex-direction: column; min-height: 100%; }
         .version { position: absolute; top: 0; right: 0; font-size: 0.7rem; font-weight: bold; color: #94a3b8; padding: 2px 8px; border-radius: 4px; background: #eee; }
         
         h1 { font-size: 1.2rem; margin: 0 0 5px 0; }
-        
-        /* 説明文・ガイドセクション */
         .guide-box { background: #eff6ff; border-left: 4px solid var(--primary); padding: 10px; margin-bottom: 8px; border-radius: 4px; }
-        .guide-box h2 { font-size: 0.8rem; margin: 0 0 4px 0; color: var(--primary); }
         .guide-box p { font-size: 0.75rem; margin: 0 0 4px 0; line-height: 1.4; }
         
-        .limit-box { background: var(--warning); border: 1px solid #ffedd5; padding: 8px 12px; margin-bottom: 10px; border-radius: 8px; }
-        .limit-box span { font-size: 0.75rem; color: #9a3412; }
+        /* スマホ用ホームリンク（PCでは非表示） */
+        #mobile-home-link { display: none; margin-bottom: 10px; }
 
         /* ナビゲーション */
         .top-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 10px; }
@@ -33,79 +36,78 @@
         select { width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 0.85rem; }
         label { font-size: 0.65rem; font-weight: bold; color: #64748b; display: block; margin-bottom: 2px; }
 
-        /* ワークスペース：PCでは横並び、スマホでは縦並び */
+        /* ワークスペース */
         .workspace { display: grid; grid-template-columns: 180px 1fr; gap: 15px; flex: 1; min-height: 0; display: none; margin-bottom: 10px; }
-        
-        /* サムネイルリスト：スマホ時は横スクロール */
         .file-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; background: #e5eaf0; padding: 10px; border-radius: 8px; border: 1px solid var(--border); }
         .thumb-item { border: 3px solid #cbd5e1; border-radius: 6px; cursor: pointer; background: #fff; position: relative; padding: 2px; flex-shrink: 0; width: 100%; box-sizing: border-box; }
-        .thumb-item.active { border-color: var(--primary); box-shadow: 0 2px 8px rgba(37,99,235,0.2); }
-        .thumb-item img { width: 100%; aspect-ratio: 1.4/1; object-fit: contain; background: #eee; display: block; border-radius: 3px; }
-        .thumb-info { font-size: 0.7rem; text-align: center; color: #475569; margin-top: 3px; font-weight: bold; }
-        .thumb-status { position: absolute; top: -6px; right: -6px; background: var(--success); color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .thumb-item.active { border-color: var(--primary); }
+        .thumb-item img { width: 100%; aspect-ratio: 1.4/1; object-fit: contain; background: #eee; display: block; }
+        .thumb-status { position: absolute; top: -6px; right: -6px; background: var(--success); color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white; }
 
         /* 編集エリア */
-        .editor-main { background: white; border-radius: 8px; border: 1px solid var(--border); padding: 10px; display: flex; flex-direction: column; min-height: 350px; }
-        .stage-wrap { flex: 1; background: #0f172a; border-radius: 6px; overflow: hidden; margin-bottom: 8px; position: relative; display: flex; align-items: center; justify-content: center; min-height: 250px; }
-        #stage-image { display: block; max-width: 100%; }
+        .editor-main { background: white; border-radius: 8px; border: 1px solid var(--border); padding: 10px; display: flex; flex-direction: column; }
+        .stage-wrap { flex: 1; background: #0f172a; border-radius: 6px; overflow: hidden; margin-bottom: 8px; position: relative; display: flex; align-items: center; justify-content: center; min-height: 300px; }
 
         /* 操作パネル */
         .correction-panel { background: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; }
-        .controls-flex { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
-        .tool-group { display: flex; gap: 6px; }
+        .controls-flex { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         .btn-tool { background: #475569; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
-        .btn-reset { background: var(--danger); width: 100%; margin-bottom: 10px; }
         .btn-confirm { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .btn-pdf { background: var(--success); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1rem; display: none; margin-top: 10px; }
 
-        /* 免責事項 */
-        .disclaimer { font-size: 10px; color: #94a3b8; text-align: center; padding: 15px 0; line-height: 1.5; border-top: 1px solid #e2e8f0; background: #fff; flex-shrink: 0; }
+        .disclaimer { font-size: 10px; color: #94a3b8; text-align: center; padding: 15px 0; line-height: 1.5; border-top: 1px solid #e2e8f0; background: #fff; }
 
         /* ★ レスポンシブ調整（スマホ用） */
         @media (max-width: 768px) {
-            body { overflow-y: auto; height: auto; }
-            .main-content { height: auto; overflow: visible; }
+            body { flex-direction: column; overflow-y: auto; height: auto; }
+            #pc-sidebar { display: none; } /* スマホではサイドバーを消す */
+            #mobile-home-link { display: block; } /* スマホ用ホームリンクを表示 */
+            .main-content { padding: 10px; height: auto; }
             .workspace { grid-template-columns: 1fr; display: flex; flex-direction: column; }
-            .file-list { flex-direction: row; overflow-x: auto; overflow-y: hidden; height: 100px; padding: 5px; }
-            .thumb-item { width: 110px; }
-            .stage-wrap { height: 50vh; min-height: 300px; }
+            .file-list { flex-direction: row; overflow-x: auto; overflow-y: hidden; height: 90px; }
+            .thumb-item { width: 100px; }
+            
+            /* ★ スマホ版プレビュー：縦サイズを縮小(画面の35%程度) */
+            .stage-wrap { height: 35vh; min-height: 220px; flex: none; }
+            
             .controls-flex { flex-direction: column; align-items: stretch; }
             .tool-group { justify-content: center; }
-            .correction-list { justify-content: center; margin: 5px 0; }
         }
     </style>
 </head>
 <body>
 
+<aside id="pc-sidebar">
+    <nav class="sidebar-nav">
+        <a href="index.html" class="nav-link">🏠 ホームへ戻る</a>
+    </nav>
+    <div style="padding: 20px; font-size: 0.75rem; color: #64748b;">
+        サイドバーメニュー等はここに配置可能です。
+    </div>
+</aside>
+
 <main class="main-content">
     <div class="container">
-        <div class="version">Ver 1.52</div>
+        <div class="version">Ver 1.53</div>
+        
+        <div id="mobile-home-link">
+            <a href="index.html" style="color: var(--primary); font-size: 0.85rem; text-decoration: none; font-weight: bold;">← ホームへ戻る</a>
+        </div>
+
         <h1>📑 Smart PDF Scanner</h1>
 
         <div class="guide-box">
-            <h2>【このツールについて】</h2>
             <p>・このツールは主に複数の画像ファイルをPDFにするためを想定したツールです。</p>
-            <h2>【使い方の手順】</h2>
-            <p>1. 画像をドロップして読み込み → 2. 画像を選択し「範囲」と「補正」を調整 → 3. ページごとに「ページ確定」をクリック → 4. 最後に「PDF保存」をクリック</p>
-        </div>
-
-        <div class="limit-box">
-            <span>💡 <strong>ご利用の目安:</strong> 推奨サイズは200MB程度です。お使いのデバイスのメモリ状況により時間がかかる場合があります。</span>
+            <p><strong>【手順】</strong>1. 読み込み → 2. 画像調整 → 3. ページ確定 → 4. PDF保存</p>
         </div>
         
-        <button class="btn-tool btn-reset" onclick="resetAll()">全てのデータを初期化して読み直す</button>
+        <button class="btn-tool" style="background:var(--danger); width:100%; margin-bottom:10px;" onclick="resetAll()">全てのデータを初期化して読み直す</button>
 
         <div class="top-nav">
-            <div class="card-mini">
-                <label>用紙サイズ</label>
-                <select id="paper-size" onchange="updateRatio()"><option value="a4">A4</option><option value="a3">A3</option><option value="b4" selected>B4</option></select>
-            </div>
-            <div class="card-mini">
-                <label>出力向き</label>
-                <select id="paper-orientation" onchange="updateRatio()"><option value="p">縦</option><option value="l" selected>横</option></select>
-            </div>
+            <div class="card-mini"><label>用紙サイズ</label><select id="paper-size" onchange="updateRatio()"><option value="a4">A4</option><option value="a3">A3</option><option value="b4" selected>B4</option></select></div>
+            <div class="card-mini"><label>出力向き</label><select id="paper-orientation" onchange="updateRatio()"><option value="p">縦</option><option value="l" selected>横</option></select></div>
             <div id="drop-zone" class="card-mini" style="border: 2px dashed var(--primary); background: #f0f9ff; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                <span style="font-size: 0.8rem; font-weight: bold; color: var(--primary);">📥 画像を追加ドロップ</span>
+                <span style="font-size: 0.8rem; font-weight: bold; color: var(--primary);">📥 追加ドロップ</span>
             </div>
             <input type="file" id="file-input" multiple accept="image/*" style="display:none;">
         </div>
@@ -119,12 +121,11 @@
                         <div class="tool-group">
                             <button class="btn-tool" onclick="rotateImg(-90)">↺ 左回転</button>
                             <button class="btn-tool" onclick="rotateImg(90)">↻ 右回転</button>
-                            <button class="btn-tool" style="background:#0ea5e9" onclick="smartFit()">書類にフィット</button>
+                            <button class="btn-tool" style="background:#0ea5e9" onclick="smartFit()">書類フィット</button>
                         </div>
-                        <div class="correction-list" style="display:flex; gap:10px;">
-                            <label class="check-item"><input type="checkbox" id="opt-bw" checked onchange="updatePreview()"> 白黒</label>
-                            <label class="check-item"><input type="checkbox" id="opt-sharp" onchange="updatePreview()"> 鮮明</label>
-                            <label class="check-item"><input type="checkbox" id="opt-white" checked onchange="updatePreview()"> 背景白</label>
+                        <div style="display:flex; gap:8px;">
+                            <label class="check-item" style="font-size:0.75rem;"><input type="checkbox" id="opt-bw" checked onchange="updatePreview()"> 白黒</label>
+                            <label class="check-item" style="font-size:0.75rem;"><input type="checkbox" id="opt-white" checked onchange="updatePreview()"> 背景白</label>
                         </div>
                         <button class="btn-confirm" onclick="applyPage()">ページ確定</button>
                     </div>
@@ -134,9 +135,7 @@
         <button class="btn-pdf" id="download-pdf-btn">✓の全ページをPDF保存</button>
 
         <div class="disclaimer">
-            【免責事項・ご注意】<br>
-            ・本ツールは個人開発のWebアプリです。処理はブラウザ内で完結し、外部へ送られることはありません。<br>
-            ・本ツールの使用によるデータの損失等について、製作者は一切の責任を負いかねます。
+            【免責事項】本ツールは個人開発のWebアプリです。処理はブラウザ内で完結します。データの損失等について、製作者は一切の責任を負いかねます。
         </div>
     </div>
 </main>
@@ -157,7 +156,7 @@
                 r.onload = e => { const i = new Image(); i.onload = () => res(i); i.src = e.target.result; };
                 r.readAsDataURL(file);
             });
-            filesData.push({ orig: img, proc: null, settings: { bw:true, sharp:false, white:true, deg:0, crop:null } });
+            filesData.push({ orig: img, proc: null, settings: { bw:true, white:true, deg:0, crop:null } });
         }
         document.getElementById('workspace').style.display = (window.innerWidth > 768) ? 'grid' : 'flex';
         renderThumbs(); openEditor(currentCount); 
@@ -197,9 +196,7 @@
         activeIdx = idx; const d = filesData[idx];
         const img = document.getElementById('stage-image'); img.src = d.orig.src;
         document.getElementById('opt-bw').checked = d.settings.bw;
-        document.getElementById('opt-sharp').checked = d.settings.sharp;
         document.getElementById('opt-white').checked = d.settings.white;
-        
         img.onload = () => {
             const s = document.getElementById('paper-size').value;
             const o = document.getElementById('paper-orientation').value;
@@ -215,14 +212,12 @@
             });
             img.onload = null;
         };
-        document.querySelectorAll('.thumb-item').forEach((it, i) => it.classList.toggle('active', i === idx));
     }
 
     function saveSettings() {
         if (!cropper || activeIdx < 0) return;
         filesData[activeIdx].settings = {
             bw: document.getElementById('opt-bw').checked,
-            sharp: document.getElementById('opt-sharp').checked,
             white: document.getElementById('opt-white').checked,
             deg: cropper.getData().rotate,
             crop: cropper.getData()
@@ -232,12 +227,10 @@
     function updatePreview() {
         if (!cropper) return;
         const bw = document.getElementById('opt-bw').checked;
-        const sh = document.getElementById('opt-sharp').checked;
         const wh = document.getElementById('opt-white').checked;
         let f = "";
         if (bw) f += "grayscale(1) ";
         if (wh) f += "contrast(1.2) brightness(1.05) ";
-        if (sh) f += "saturate(0) contrast(1.1) ";
         const wrap = document.querySelector('.cropper-container');
         if (wrap) wrap.style.filter = f || "none";
         saveSettings();
@@ -253,10 +246,9 @@
         const targetRatio = (o === 'p') ? paperMap[s][0]/paperMap[s][1] : paperMap[s][1]/paperMap[s][0];
         const imgWidth = canvasData.width; const imgHeight = canvasData.height;
         const imgRatio = imgWidth / imgHeight;
-        let finalWidth, finalHeight;
-        if (imgRatio > targetRatio) { finalHeight = imgHeight; finalWidth = imgHeight * targetRatio; }
-        else { finalWidth = imgWidth; finalHeight = imgWidth / targetRatio; }
-        cropper.setCropBoxData({ left: canvasData.left + (imgWidth - finalWidth) / 2, top: canvasData.top + (imgHeight - finalHeight) / 2, width: finalWidth, height: finalHeight });
+        let nW = imgWidth, nH = imgHeight;
+        if (imgRatio > targetRatio) nW = nH * targetRatio; else nH = nW / targetRatio;
+        cropper.setCropBoxData({ left: canvasData.left + (imgWidth - nW) / 2, top: canvasData.top + (imgHeight - nH) / 2, width: nW, height: nH });
         updatePreview();
     }
 
@@ -276,7 +268,6 @@
         let f = "";
         if (set.bw) f += "grayscale(1) ";
         if (set.white) f += "contrast(1.2) brightness(1.05) ";
-        if (set.sharp) f += "saturate(0) contrast(1.1) ";
         ctx.filter = f || "none";
         ctx.drawImage(canv, 0, 0);
         filesData[activeIdx].proc = final.toDataURL('image/jpeg', 0.9);
@@ -291,7 +282,7 @@
         const pdf = new jsPDF(o, 'mm', s);
         let added = 0;
         filesData.forEach((d) => { if (d.proc) { if (added > 0) pdf.addPage(s, o); pdf.addImage(d.proc, 'JPEG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight()); added++; } });
-        if (added > 0) pdf.save(`Scan_Combined_v1.52.pdf`);
+        if (added > 0) pdf.save(`Scan_Combined_v1.53.pdf`);
     };
 </script>
 </body>
