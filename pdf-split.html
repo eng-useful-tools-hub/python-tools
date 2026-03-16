@@ -3,182 +3,268 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Splitter - モダン分割ツール</title>
+    <title>PDF Splitter - Ver 1.62</title>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-
+    
     <style>
-        :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --bg-color: #f8fafc;
-            --sidebar-bg: #ffffff;
-            --card-bg: #ffffff;
-            --text-main: #1e293b;
-            --text-sub: #64748b;
-            --accent-bg: #eff6ff;
-            --border: #e2e8f0;
-            --error: #dc2626;
+        /* 1. 共通デザイン規約: 配色設定 */
+        :root { 
+            --primary: #2563eb; 
+            --success: #059669; 
+            --danger: #dc2626; 
+            --warning: #fff7ed; 
+            --bg: #f1f5f9; 
+            --text: #1e293b; 
+            --border: #cbd5e1; 
+            --sidebar-width: 260px; 
         }
 
-        body {
-            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            margin: 0;
-            display: flex;
-            min-height: 100vh;
+        /* 1. 共通デザイン規約: 基本フォント設定 */
+        body { 
+            font-family: sans-serif; 
+            background: var(--bg); 
+            margin: 0; 
+            display: flex; 
+            color: var(--text); 
+            height: 100vh; 
+            overflow: hidden; 
+            font-size: 1rem; 
         }
 
-        /* サイドバー固定 */
-        .sidebar {
-            width: 260px;
-            background-color: var(--sidebar-bg);
-            border-right: 1px solid var(--border);
-            position: fixed;
-            height: 100vh;
-            overflow-y: auto;
-            z-index: 100;
+        /* 2. レイアウト・レスポンシブ規約: PC版サイドバー */
+        #pc-sidebar { 
+            width: var(--sidebar-width); 
+            background: white; 
+            border-right: 1px solid #e2e8f0; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            flex-shrink: 0; 
         }
 
-        /* メインコンテンツの中央寄せ */
-        .main-content {
-            flex: 1;
-            margin-left: 260px;
-            padding: 40px 20px;
-            display: flex;
-            justify-content: center;
+        .main-content { 
+            flex: 1; 
+            padding: 10px 15px; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            box-sizing: border-box; 
+            overflow-y: auto; 
         }
 
-        .container {
-            width: 100%;
-            max-width: 800px;
+        .container { 
+            max-width: 800px; 
+            width: 100%; 
+            margin: 0 auto; 
+            position: relative; 
+            display: flex; 
+            flex-direction: column; 
+            min-height: 100%; 
         }
 
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
+        /* 1. 共通デザイン規約: ホームリンク */
+        .back-home { 
+            display: inline-flex; 
+            align-items: center; 
+            text-decoration: none; 
+            color: var(--primary); 
+            font-weight: bold; 
+            font-size: 1rem; 
+            margin-bottom: 10px; 
         }
 
-        h1 { font-size: 2rem; margin: 0; letter-spacing: -0.025em; }
-
-        .version-tag {
-            font-size: 0.85rem;
-            color: var(--text-sub);
-            background: #e2e8f0;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-weight: bold;
+        /* 1. 共通デザイン規約: ヘッダー構造 */
+        .header-flex { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 5px; 
         }
 
-        /* ツール固有のスタイル */
-        .notice-box { background-color: #fffbeb; border: 1px solid #fef3c7; color: #92400e; padding: 16px; border-radius: 12px; margin-bottom: 30px; font-size: 0.9rem; }
-        .card { background: var(--card-bg); padding: 32px; border-radius: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); margin-bottom: 24px; border: 1px solid var(--border); }
-        
-        #drop_zone { border: 2px dashed var(--border); border-radius: 16px; padding: 60px 20px; text-align: center; background: #fafafa; cursor: pointer; transition: all 0.3s; color: var(--text-sub); }
-        #drop_zone:hover { border-color: var(--primary); background-color: var(--accent-bg); color: var(--primary); }
+        h1 { font-size: 1.5rem; margin: 0; color: #1e293b; }
 
-        .mode-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
-        .mode-btn { padding: 14px; border: 1px solid var(--border); border-radius: 12px; cursor: pointer; background: white; font-weight: 600; color: var(--text-sub); }
-        .mode-btn.active { border-color: var(--primary); background: var(--accent-bg); color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+        .version-badge { 
+            font-size: 1rem; 
+            color: #475569; 
+            background-color: #e2e8f0; 
+            padding: 2px 12px; 
+            border-radius: 20px; 
+            font-weight: 500; 
+        }
 
-        .input-group { background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
-        input[type="number"] { width: 80px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; }
+        /* 3. コンポーネント規約: ガイドエリア */
+        .guide-area { 
+            background: #eff6ff; 
+            border-left: 4px solid var(--primary); 
+            padding: 12px; 
+            margin-bottom: 8px; 
+            border-radius: 4px; 
+        }
+        .guide-area p { font-size: 1rem; margin: 0 0 6px 0; line-height: 1.5; }
 
-        button#split_btn { background-color: var(--primary); color: white; border: none; border-radius: 12px; cursor: pointer; width: 100%; padding: 18px; font-size: 1.1rem; font-weight: 700; transition: all 0.2s; }
-        button#split_btn:hover:not(:disabled) { background-color: var(--primary-hover); }
-        button#split_btn:disabled { background-color: #cbd5e1; cursor: not-allowed; }
+        /* 3. コンポーネント規約: 目安ボックス */
+        .limit-box { 
+            background: var(--warning); 
+            border: 1px solid #ffedd5; 
+            padding: 10px; 
+            margin-bottom: 12px; 
+            border-radius: 8px; 
+        }
+        .limit-box span { font-size: 1rem; color: #9a3412; font-weight: bold; }
 
-        .progress-bar { width: 100%; background: #e2e8f0; height: 12px; border-radius: 10px; display: none; margin-top: 20px; overflow: hidden; }
-        .progress-fill { width: 0%; background: var(--primary); height: 100%; transition: width 0.3s ease; }
-        .error-message { color: var(--error); background: #fef2f2; padding: 16px; border-radius: 12px; border: 1px solid #fee2e2; margin-top: 20px; font-size: 0.9rem; }
-        
-        footer.disclaimer { text-align: center; font-size: 0.8rem; color: var(--text-sub); margin-top: 60px; padding: 20px; border-top: 1px solid var(--border); line-height: 1.8; }
+        /* 3. コンポーネント規約: 操作カード */
+        .card-mini { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            border: 1px solid var(--border); 
+            margin-bottom: 15px;
+        }
 
-        @media (max-width: 900px) {
-            .sidebar { display: none; }
-            .main-content { margin-left: 0; padding: 20px; }
+        #drop_zone { 
+            border: 2px dashed var(--border); 
+            border-radius: 12px; 
+            padding: 40px 20px; 
+            text-align: center; 
+            background: #fafafa; 
+            cursor: pointer; 
+            font-size: 1rem;
+            color: #64748b;
+        }
+        #drop_zone:hover { border-color: var(--primary); background: #f0f9ff; }
+
+        .top-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 15px; }
+        select, input[type="number"] { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 1rem; }
+        label { font-size: 1rem; font-weight: bold; color: #64748b; display: block; margin-bottom: 5px; }
+
+        .mode-selector { display: flex; gap: 10px; margin-bottom: 15px; }
+        .mode-btn { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: white; cursor: pointer; font-size: 1rem; font-weight: bold; }
+        .mode-btn.active { border-color: var(--primary); background: #eff6ff; color: var(--primary); }
+
+        .btn-main { 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            padding: 15px; 
+            border-radius: 10px; 
+            font-weight: bold; 
+            width: 100%; 
+            cursor: pointer; 
+            font-size: 1.1rem; 
+        }
+        .btn-main:disabled { background: #cbd5e1; cursor: not-allowed; }
+
+        .progress-bar { width: 100%; background: #e2e8f0; height: 12px; border-radius: 10px; display: none; margin-top: 15px; overflow: hidden; }
+        .progress-fill { width: 0%; background: var(--primary); height: 100%; transition: width 0.3s; }
+
+        /* 3. コンポーネント規約: フッター免責 */
+        .footer-disclaimer { 
+            font-size: 1rem; 
+            color: #64748b; 
+            text-align: center; 
+            padding: 20px 0; 
+            line-height: 1.6; 
+            border-top: 1px solid #e2e8f0; 
+            background: #fff; 
+            margin-top: auto; 
+        }
+
+        /* 2. レイアウト・レスポンシブ規約: スマホ版設定 */
+        @media (max-width: 768px) {
+            #pc-sidebar { display: none; }
+            body { overflow-y: auto; height: auto; }
+            .main-content { padding: 8px; height: auto; }
+            /* プレビューエリア相当（アップロードゾーン）の高さ制限 */
+            #drop_zone { padding: 30px 10px; }
+            .container { padding-bottom: 20px; }
         }
     </style>
 </head>
 <body>
 
-<aside class="sidebar" id="common-sidebar"></aside>
+<aside id="pc-sidebar"></aside>
 
 <main class="main-content">
     <div class="container">
-        <header>
-            <h1>PDF Splitter</h1>
-            <div class="version-tag">Version 1.23</div>
-        </header>
+        <a href="index.html" class="back-home">🏠 ホームへ戻る</a>
 
-        <div class="notice-box">
-            💡 <strong>ご利用の目安:</strong> 推奨サイズは200MB程度です。大容量ファイルも処理可能ですが、お使いのデバイスのメモリ状況により時間がかかる場合があります。
+        <div class="header-flex">
+            <h1>📑 PDF Splitter</h1>
+            <div class="version-badge">Version 1.62</div>
         </div>
 
-        <div class="card">
-            <h3><span>📁</span> ファイルをアップロード</h3>
+        <div class="guide-area">
+            <p>・このツールは大きなPDFファイルを複数のPDFファイルに分割するためのツールです。</p>
+            <p><strong>【手順】</strong> 1. ファイルを選択 → 2. 分割モードを選択 → 3. 分割実行</p>
+        </div>
+
+        <div class="limit-box">
+            <span>💡 <b>ご利用の目安：</b> 推奨サイズは200MB程度です。デバイスのメモリ状況により時間がかかる場合があります。</span>
+        </div>
+
+        <div class="card-mini">
+            <label>PDFファイルをアップロード</label>
             <div id="drop_zone">
-                <div style="font-size: 40px; margin-bottom: 10px;">📄</div>
+                <div style="font-size: 2rem; margin-bottom: 10px;">📄</div>
                 PDFファイルをドロップするか、クリックして選択
             </div>
             <input type="file" id="file_input" accept="application/pdf" style="display: none;">
-            
-            <div id="file_info" style="margin-top:20px; font-weight:600; text-align:center;"></div>
-            <div id="status_area"></div>
-            
+            <div id="file_info" style="margin-top:15px; font-weight:bold; text-align:center; font-size:1rem;"></div>
             <div class="progress-bar" id="p_bar">
                 <div class="progress-fill" id="p_fill"></div>
             </div>
         </div>
 
-        <div id="step2_area" class="card" style="display: none;">
-            <h3><span>⚙️</span> 分割設定</h3>
-            
+        <div id="step2_area" class="card-mini" style="display: none;">
+            <label>分割モードを選択</label>
             <div class="mode-selector">
                 <button class="mode-btn active" id="mode_page">ページ指定</button>
                 <button class="mode-btn" id="mode_size">容量目安(MB)</button>
             </div>
 
-            <div id="page_setting" class="input-group">
-                分割後の数: <input type="number" id="num_splits" value="2" min="2" max="100"> 個
-                <div id="split_points_container" style="margin-top:20px; font-size: 0.9rem;"></div>
+            <div id="page_setting" style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <label>分割後のファイル数</label>
+                <input type="number" id="num_splits" value="2" min="2" max="100">
+                <div id="split_points_container" style="margin-top:15px; font-size: 1rem;"></div>
             </div>
 
-            <div id="size_setting" class="input-group" style="display: none;">
-                1ファイルの最大サイズ: <input type="number" id="size_limit" value="20" min="1"> MB
+            <div id="size_setting" style="display: none; background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <label>1ファイルの最大サイズ (MB)</label>
+                <input type="number" id="size_limit" value="20" min="1">
             </div>
-            
-            <button id="split_btn">分割処理を開始</button>
-            <div id="success_msg" style="display:none; color: #059669; text-align:center; font-weight:bold; margin-top:15px; background:#ecfdf5; padding:10px; border-radius:8px;">✨ 全ての分割が完了しました！</div>
+
+            <button id="split_btn" class="btn-main">分割処理を開始</button>
+            <div id="success_msg" style="display:none; color: var(--success); text-align:center; font-weight:bold; margin-top:15px; background:#ecfdf5; padding:10px; border-radius:8px;">✨ 全ての分割が完了しました！</div>
         </div>
 
-        <footer class="disclaimer">
-            <strong>【免責事項・ご注意】</strong><br>
-            ・本ツールは個人開発のWebアプリです。処理はすべてブラウザ内で完結し、外部へファイルが送られることはありません。<br>
-            ・暗号化やパスワード保護が施されたPDFは解析できずエラーになる場合があります。<br>
-            ・本ツールの使用によるデータの損失等について、製作者は一切の責任を負いかねます。
-        </footer>
+        <div class="footer-disclaimer">
+            【免責事項・ご注意】<br>
+            ・本ツールは個人開発のWebアプリです。処理はすべてブラウザ内で完結します。<br>
+            ・パスワード保護されたPDFは解析できません。<br>
+            ・本ツールの使用によるデータの損失等について一切の責任を負いかねます。
+        </div>
     </div>
 </main>
 
 <script>
-    // --- サイドバーの読み込み ---
-    fetch('sidebar.html')
-        .then(res => res.text())
-        .then(data => {
-            document.getElementById('common-sidebar').innerHTML = data;
-            // PDF Splitterのメニューをアクティブにする
-            const navPdf = document.getElementById('nav-pdf-split');
-            if(navPdf) {
-                navPdf.style.backgroundColor = '#eff6ff';
-                navPdf.style.color = '#2563eb';
-                navPdf.style.fontWeight = 'bold';
-            }
-        });
+    // --- 2. レイアウト規約: サイドバーJS制御 ---
+    fetch('sidebar.html').then(res => res.text()).then(html => { 
+        document.getElementById('pc-sidebar').innerHTML = html;
+        if (window.innerWidth > 768) {
+            document.querySelector('.back-home').style.display = 'none';
+        }
+        // サイドバー内の対象メニューを強調
+        const navPdf = document.getElementById('nav-pdf-split');
+        if(navPdf) {
+            navPdf.style.backgroundColor = '#eff6ff';
+            navPdf.style.color = '#2563eb';
+            navPdf.style.fontWeight = 'bold';
+        }
+    }).catch(() => { 
+        document.getElementById('pc-sidebar').innerHTML = '<div style="padding:15px;">Menu</div>'; 
+    });
 
-    // --- PDF分割ロジック (既存) ---
+    // --- 4. 実装機能: PDF分割ロジック ---
     let pdfData = null;
     let originalFileName = "";
     let totalPages = 0;
@@ -187,7 +273,6 @@
 
     const fileInput = document.getElementById('file_input');
     const dropZone = document.getElementById('drop_zone');
-    const statusArea = document.getElementById('status_area');
     const fileInfo = document.getElementById('file_info');
     const step2Area = document.getElementById('step2_area');
     const numSplits = document.getElementById('num_splits');
@@ -198,15 +283,15 @@
     dropZone.onclick = () => fileInput.click();
     fileInput.onchange = (e) => handleFile(e.target.files[0]);
     dropZone.ondrop = (e) => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); };
-    dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.backgroundColor = '#eff6ff'; };
-    dropZone.ondragleave = () => dropZone.style.backgroundColor = '#fafafa';
+    dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.background = '#f0f9ff'; };
+    dropZone.ondragleave = () => dropZone.style.background = '#fafafa';
 
     async function handleFile(file) {
         if (!file || file.type !== "application/pdf") return;
         originalFileName = file.name.replace(".pdf", "");
         totalFileSize = file.size;
         pBar.style.display = "block";
-        statusArea.innerHTML = `<div style="text-align:center;">読み込んでいます...</div>`;
+        fileInfo.innerText = "読み込んでいます...";
 
         const reader = new FileReader();
         reader.onload = async (e) => {
@@ -215,11 +300,10 @@
                 const pdfDoc = await PDFLib.PDFDocument.load(pdfData, { ignoreEncryption: true });
                 totalPages = pdfDoc.getPageCount();
                 fileInfo.innerText = `${file.name} (${(totalFileSize/1024/1024).toFixed(1)} MB / ${totalPages} P)`;
-                statusArea.innerHTML = `<div style="text-align:center; color:var(--primary); font-weight:bold;">読み込み完了</div>`;
                 step2Area.style.display = "block";
                 updateSplitUI();
             } catch (err) {
-                statusArea.innerHTML = `<div class="error-message">❌ 解析に失敗しました。</div>`;
+                fileInfo.innerText = "❌ 解析に失敗しました。";
             }
         };
         reader.readAsArrayBuffer(file);
@@ -250,7 +334,7 @@
         let html = "<strong>分割位置の調整:</strong>";
         for (let i = 1; i < num; i++) {
             let val = Math.floor(step * i);
-            html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #eee;">区切り ${i}: <span><input type="number" class="split-point" value="${val}" min="1" max="${totalPages-1}"> ページ目の後ろ</span></div>`;
+            html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #eee;">区切り ${i}: <span><input type="number" class="split-point" value="${val}" min="1" max="${totalPages-1}" style="width:70px;"> ページ目の後ろ</span></div>`;
         }
         container.innerHTML = html;
     }
@@ -258,6 +342,7 @@
 
     splitBtn.onclick = async () => {
         splitBtn.disabled = true;
+        document.getElementById('success_msg').style.display = "none";
         try {
             const srcDoc = await PDFLib.PDFDocument.load(pdfData);
             let ranges = [];
@@ -285,7 +370,7 @@
             }
             document.getElementById('success_msg').style.display = "block";
         } catch (err) {
-            statusArea.innerHTML = `<div class="error-message">エラーが発生しました。</div>`;
+            fileInfo.innerText = "エラーが発生しました。";
         } finally {
             splitBtn.disabled = false;
         }
