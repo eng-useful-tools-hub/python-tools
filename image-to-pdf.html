@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Smart PDF Scanner - Ver 1.38</title>
+    <title>Smart PDF Scanner - Ver 1.39</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
@@ -23,15 +23,13 @@
         .thumb-item { border: 2px solid transparent; border-radius: 8px; cursor: pointer; background: #fff; overflow: hidden; position: relative; }
         .thumb-item.active { border-color: var(--primary); box-shadow: 0 0 10px rgba(37,99,235,0.2); }
         .thumb-item img { width: 100%; aspect-ratio: 1/1.4; object-fit: contain; background: #eee; display: block; }
-        .thumb-status { position: absolute; top: 3px; right: 3px; background: var(--success); color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+        .thumb-status { position: absolute; top: 3px; right: 3px; background: var(--success); color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; display: flex; align-items: center; justify-content: center; z-index: 10; }
 
         .editor-main { background: white; border-radius: 12px; border: 1px solid var(--border); padding: 20px; }
         .stage-wrap { width: 100%; height: 450px; background: #1e293b; border-radius: 8px; overflow: hidden; margin-bottom: 15px; position: relative; }
         #stage-image { max-width: 100%; display: block; }
 
-        /* リアルタイム補正を反映させるためのスタイル */
-        .cropper-container { transition: filter 0.2s ease; }
-
+        /* 補正パネル */
         .correction-panel { background: #f1f5f9; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e1; }
         .controls-flex { display: flex; flex-wrap: wrap; gap: 15px; justify-content: space-between; align-items: center; }
         .tool-group { display: flex; gap: 8px; }
@@ -39,6 +37,8 @@
         .correction-list { display: flex; gap: 12px; border-left: 2px solid #cbd5e1; padding-left: 15px; }
         .check-item { display: flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: bold; cursor: pointer; color: #475569; }
         .btn-confirm { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        
+        /* PDF出力ボタン */
         .btn-pdf { background: var(--success); color: white; border: none; padding: 20px; border-radius: 10px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1.3rem; margin-top: 25px; display: none; }
     </style>
 </head>
@@ -48,19 +48,19 @@
 
 <main class="main-content">
     <div class="container">
-        <div class="version">Ver 1.38</div>
+        <div class="version">Ver 1.39</div>
         <h1 style="margin-top: 0; font-size: 1.8rem; color: #0f172a;">📑 Smart PDF Scanner</h1>
         <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 25px;">
-            画像をドロップして読み込み、各ページの範囲と画質を調整してください。チェックを切り替えるとリアルタイムにプレビューへ反映されます。
-            全ページの「確定」が終わったら、最下部のボタンで1つのPDFにまとめます。
+            画像をドロップして読み込み、各ページの範囲と画質を調整してください。チェックを切り替えると即座にプレビューへ反映されます。
+            「ページ確定」を押し、✓がついた全ページがPDFとして保存されます。
         </p>
 
         <div class="card">
             <div style="display:flex; gap:15px; margin-bottom:15px;">
-                <div style="flex:1;"><label>出力サイズ</label><select id="paper-size" onchange="updateCropRatioForAll()"><option value="a4">A4</option><option value="a3">A3</option><option value="b4" selected>B4</option></select></div>
-                <div style="flex:1;"><label>出力の向き</label><select id="paper-orientation" onchange="updateCropRatioForAll()"><option value="p">縦</option><option value="l" selected>横</option></select></div>
+                <div style="flex:1;"><label>共通サイズ</label><select id="paper-size" onchange="updateRatio()"><option value="a4">A4</option><option value="a3">A3</option><option value="b4" selected>B4</option></select></div>
+                <div style="flex:1;"><label>共通向き</label><select id="paper-orientation" onchange="updateRatio()"><option value="p">縦</option><option value="l" selected>横</option></select></div>
             </div>
-            <div class="drop-zone" id="drop-zone"><strong>ここに写真をドロップ（最大30枚）</strong></div>
+            <div class="drop-zone" id="drop-zone"><strong>写真をドロップ（最大30枚）</strong></div>
             <input type="file" id="file-input" multiple accept="image/*" style="display:none;">
         </div>
 
@@ -71,21 +71,21 @@
                 <div class="correction-panel">
                     <div class="controls-flex">
                         <div class="tool-group">
-                            <button class="btn-tool" onclick="rotateImage(-90)">↺ 左90°</button>
-                            <button class="btn-tool" onclick="rotateImage(90)">↻ 右90°</button>
-                            <button class="btn-tool" onclick="smartFitToPaper()">書類にフィット</button>
+                            <button class="btn-tool" onclick="rotateImg(-90)">↺ 左回転</button>
+                            <button class="btn-tool" onclick="rotateImg(90)">↻ 右回転</button>
+                            <button class="btn-tool" onclick="smartFit()">書類にフィット</button>
                         </div>
                         <div class="correction-list">
-                            <label class="check-item"><input type="checkbox" id="opt-bw" checked onchange="updateRealtimePreview()"> 白黒補正</label>
-                            <label class="check-item"><input type="checkbox" id="opt-sharp" onchange="updateRealtimePreview()"> シャープ</label>
-                            <label class="check-item"><input type="checkbox" id="opt-white" checked onchange="updateRealtimePreview()"> 背景白飛</label>
+                            <label class="check-item"><input type="checkbox" id="opt-bw" checked onchange="recordAndPreview()"> 白黒補正</label>
+                            <label class="check-item"><input type="checkbox" id="opt-sharp" onchange="recordAndPreview()"> シャープ</label>
+                            <label class="check-item"><input type="checkbox" id="opt-white" checked onchange="recordAndPreview()"> 背景白飛</label>
                         </div>
-                        <button class="btn-confirm" onclick="applyAndNext()">ページ確定</button>
+                        <button class="btn-confirm" onclick="applyPage()">ページ確定</button>
                     </div>
                 </div>
             </div>
         </div>
-        <button class="btn-pdf" id="download-pdf">すべての確定済みページを1つのPDFで保存</button>
+        <button class="btn-pdf" id="download-pdf-btn">✓マークがついた全ページを1つのPDFで保存</button>
     </div>
 </main>
 
@@ -107,48 +107,44 @@
                 r.onload = e => { const i = new Image(); i.onload = () => res(i); i.src = e.target.result; };
                 r.readAsDataURL(file);
             });
-            filesData.push({ 
-                orig: img, name: file.name, proc: null, 
-                settings: { bw:true, sharp:false, white:true, deg:0, cropData:null } 
-            });
+            filesData.push({ orig: img, proc: null, settings: { bw:true, sharp:false, white:true, deg:0, crop:null } });
         }
         document.getElementById('workspace').style.display = 'grid';
-        renderThumbnails(); 
-        openEditor(currentCount); 
+        renderThumbs(); openEditor(currentCount); 
     }
 
-    function renderThumbnails() {
+    function renderThumbs() {
         const list = document.getElementById('thumb-list'); list.innerHTML = "";
-        filesData.forEach((data, i) => {
-            const item = document.createElement('div');
-            item.className = `thumb-item ${i === activeIdx ? 'active' : ''}`;
-            item.innerHTML = `<img src="${data.orig.src}">${data.proc ? '<div class="thumb-status">✓</div>' : ''}`;
-            item.onclick = () => { recordCurrentSettings(); openEditor(i); }; 
-            list.appendChild(item);
+        filesData.forEach((d, i) => {
+            const div = document.createElement('div');
+            div.className = `thumb-item ${i === activeIdx ? 'active' : ''}`;
+            div.innerHTML = `<img src="${d.orig.src}">${d.proc ? '<div class="thumb-status">✓</div>' : ''}`;
+            div.onclick = () => { recordAndPreview(); openEditor(i); };
+            list.appendChild(div);
         });
-        document.getElementById('download-pdf').style.display = filesData.some(d => d.proc) ? 'block' : 'none';
+        document.getElementById('download-pdf-btn').style.display = filesData.some(d => d.proc) ? 'block' : 'none';
     }
 
     function openEditor(idx) {
         if (cropper) cropper.destroy();
-        activeIdx = idx; const data = filesData[idx];
-        const img = document.getElementById('stage-image'); img.src = data.orig.src;
+        activeIdx = idx; const d = filesData[idx];
+        const img = document.getElementById('stage-image'); img.src = d.orig.src;
 
-        document.getElementById('opt-bw').checked = data.settings.bw;
-        document.getElementById('opt-sharp').checked = data.settings.sharp;
-        document.getElementById('opt-white').checked = data.settings.white;
+        document.getElementById('opt-bw').checked = d.settings.bw;
+        document.getElementById('opt-sharp').checked = d.settings.sharp;
+        document.getElementById('opt-white').checked = d.settings.white;
 
         img.onload = () => {
-            const sizeKey = document.getElementById('paper-size').value;
-            const orient = document.getElementById('paper-orientation').value;
-            cropper = new Cropper(img, { 
-                aspectRatio: (orient === 'p') ? paperMap[sizeKey][0]/paperMap[sizeKey][1] : paperMap[sizeKey][1]/paperMap[sizeKey][0], 
+            const s = document.getElementById('paper-size').value;
+            const o = document.getElementById('paper-orientation').value;
+            cropper = new Cropper(img, {
+                aspectRatio: (o === 'p') ? paperMap[s][0]/paperMap[s][1] : paperMap[s][1]/paperMap[s][0],
                 viewMode: 1, background: false, autoCropArea: 1,
                 ready() {
-                    if (data.settings.deg !== 0) cropper.rotate(data.settings.deg);
-                    if (data.settings.cropData) cropper.setData(data.settings.cropData);
-                    else smartFitToPaper();
-                    updateRealtimePreview();
+                    if (d.settings.deg !== 0) cropper.rotate(d.settings.deg);
+                    if (d.settings.crop) cropper.setData(d.settings.crop);
+                    else smartFit();
+                    recordAndPreview();
                 }
             });
             img.onload = null;
@@ -156,107 +152,103 @@
         document.querySelectorAll('.thumb-item').forEach((it, i) => it.classList.toggle('active', i === idx));
     }
 
-    // ★ リアルタイムプレビュー機能
-    function updateRealtimePreview() {
+    // ★ リアルタイムプレビュー & 設定記録
+    function recordAndPreview() {
         if (!cropper) return;
         const bw = document.getElementById('opt-bw').checked;
-        const sharp = document.getElementById('opt-sharp').checked;
-        const white = document.getElementById('opt-white').checked;
+        const sh = document.getElementById('opt-sharp').checked;
+        const wh = document.getElementById('opt-white').checked;
         
+        // 設定をメモリに保存
+        filesData[activeIdx].settings = {
+            bw, sharp: sh, white: wh,
+            deg: cropper.getData().rotate,
+            crop: cropper.getData()
+        };
+
+        // プレビューにフィルタを適用 (Cropper自体をフィルタリング)
         let filter = "";
         if (bw) filter += "grayscale(1) ";
-        if (white) filter += "contrast(1.2) brightness(1.05) ";
-        if (sharp) filter += "saturate(0) contrast(1.1) ";
+        if (wh) filter += "contrast(1.2) brightness(1.05) ";
+        if (sh) filter += "saturate(0) contrast(1.1) ";
         
-        // Cropperのキャンバス要素にCSSフィルタを直接適用
-        const canvas = document.querySelector('.cropper-canvas');
-        if (canvas) canvas.style.filter = filter || "none";
-        recordCurrentSettings();
+        const wrap = document.querySelector('.cropper-container');
+        if (wrap) wrap.style.filter = filter || "none";
     }
 
-    function recordCurrentSettings() {
-        if (!cropper || activeIdx < 0) return;
-        filesData[activeIdx].settings = {
-            bw: document.getElementById('opt-bw').checked,
-            sharp: document.getElementById('opt-sharp').checked,
-            white: document.getElementById('opt-white').checked,
-            deg: cropper.getData().rotate,
-            cropData: cropper.getData()
-        };
-    }
+    function rotateImg(deg) { if (cropper) { cropper.rotate(deg); recordAndPreview(); } }
 
-    function rotateImage(val) { if (cropper) { cropper.rotate(val); updateRealtimePreview(); } }
-
-    function smartFitToPaper() {
+    function smartFit() {
         if (!cropper) return;
-        const canvasData = cropper.getCanvasData();
-        const sizeKey = document.getElementById('paper-size').value;
-        const orient = document.getElementById('paper-orientation').value;
-        const targetRatio = (orient === 'p') ? paperMap[sizeKey][0]/paperMap[sizeKey][1] : paperMap[sizeKey][1]/paperMap[sizeKey][0];
-        const imgRatio = canvasData.width / canvasData.height;
+        const canv = cropper.getCanvasData();
+        const s = document.getElementById('paper-size').value;
+        const o = document.getElementById('paper-orientation').value;
+        const targetR = (o === 'p') ? paperMap[s][0]/paperMap[s][1] : paperMap[s][1]/paperMap[s][0];
+        const imgR = canv.width / canv.height;
 
-        let nW = canvasData.width, nH = canvasData.height;
-        if (imgRatio > targetRatio) nW = nH * targetRatio; else nH = nW / targetRatio;
+        let nW = canv.width, nH = canv.height;
+        if (imgR > targetR) nW = nH * targetR; else nH = nW / targetR;
 
         cropper.setCropBoxData({
-            left: canvasData.left + (canvasData.width - nW) / 2,
-            top: canvasData.top + (canvasData.height - nH) / 2,
+            left: canv.left + (canv.width - nW) / 2,
+            top: canv.top + (canv.height - nH) / 2,
             width: nW, height: nH
         });
-        updateRealtimePreview();
+        recordAndPreview();
     }
 
-    function updateCropRatioForAll() {
-        if (!cropper) return;
-        const sizeKey = document.getElementById('paper-size').value;
-        const orient = document.getElementById('paper-orientation').value;
-        cropper.setAspectRatio((orient === 'p') ? paperMap[sizeKey][0]/paperMap[sizeKey][1] : paperMap[sizeKey][1]/paperMap[sizeKey][0]);
-        smartFitToPaper();
+    function updateRatio() { if (cropper) { updateCropRatio(); smartFit(); } }
+    function updateCropRatio() {
+        const s = document.getElementById('paper-size').value;
+        const o = document.getElementById('paper-orientation').value;
+        cropper.setAspectRatio((o === 'p') ? paperMap[s][0]/paperMap[s][1] : paperMap[s][1]/paperMap[s][0]);
     }
 
-    async function applyAndNext() {
+    // ★ ページ確定：その時点のCanvasを画像データとして配列に保存
+    async function applyPage() {
         if (!cropper) return;
-        recordCurrentSettings();
+        recordAndPreview();
         
-        const sizeKey = document.getElementById('paper-size').value;
-        const orient = document.getElementById('paper-orientation').value;
-        let [pW, pH] = (orient === 'p') ? paperMap[sizeKey] : [paperMap[sizeKey][1], paperMap[sizeKey][0]];
+        const s = document.getElementById('paper-size').value;
+        const o = document.getElementById('paper-orientation').value;
+        let [pW, pH] = (o === 'p') ? paperMap[s] : [paperMap[s][1], paperMap[s][0]];
 
-        const croppedCanvas = cropper.getCroppedCanvas({ width: pW * 3.5 });
-        const finalCanvas = document.createElement('canvas');
-        finalCanvas.width = croppedCanvas.width; finalCanvas.height = croppedCanvas.height;
-        const ctx = finalCanvas.getContext('2d');
+        const canv = cropper.getCroppedCanvas({ width: pW * 3.5 });
+        const final = document.createElement('canvas');
+        final.width = canv.width; final.height = canv.height;
+        const ctx = final.getContext('2d');
 
-        const s = filesData[activeIdx].settings;
-        let filters = [];
-        if (s.bw) filters.push('grayscale(1)');
-        if (s.white) filters.push('contrast(1.2) brightness(1.05)');
-        if (s.sharp) filters.push('saturate(0) contrast(1.1)');
+        const set = filesData[activeIdx].settings;
+        let filter = "";
+        if (set.bw) filter += "grayscale(1) ";
+        if (set.white) filter += "contrast(1.2) brightness(1.05) ";
+        if (set.sharp) filter += "saturate(0) contrast(1.1) ";
+        ctx.filter = filter || "none";
+        ctx.drawImage(canv, 0, 0);
+
+        // 配列のprocプロパティに確実にデータを格納
+        filesData[activeIdx].proc = final.toDataURL('image/jpeg', 0.9);
         
-        ctx.filter = filters.length ? filters.join(' ') : 'none';
-        ctx.drawImage(croppedCanvas, 0, 0);
-
-        filesData[activeIdx].proc = finalCanvas.toDataURL('image/jpeg', 0.9);
-        renderThumbnails();
+        renderThumbs();
         if (activeIdx < filesData.length - 1) openEditor(activeIdx + 1);
     }
 
-    document.getElementById('download-pdf').onclick = () => {
+    // ★ PDF出力：配列にある全てのprocデータをページとして追加
+    document.getElementById('download-pdf-btn').onclick = () => {
         const { jsPDF } = window.jspdf;
-        const sizeKey = document.getElementById('paper-size').value;
-        const orient = document.getElementById('paper-orientation').value;
-        const pdf = new jsPDF(orient, 'mm', sizeKey);
+        const s = document.getElementById('paper-size').value;
+        const o = document.getElementById('paper-orientation').value;
+        const pdf = new jsPDF(o, 'mm', s);
         
-        let pageIdx = 0;
-        // filesDataを順番にスキャンしてproc（確定済み画像）があるものをすべて追加
+        let added = 0;
         filesData.forEach(d => {
             if (d.proc) {
-                if (pageIdx > 0) pdf.addPage(sizeKey, orient);
+                if (added > 0) pdf.addPage(s, o);
                 pdf.addImage(d.proc, 'JPEG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
-                pageIdx++;
+                added++;
             }
         });
-        pdf.save(`Scan_Combined_Ver1.38.pdf`);
+        if (added > 0) pdf.save(`Scan_Combined_v139.pdf`);
     };
 </script>
 </body>
