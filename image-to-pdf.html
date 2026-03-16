@@ -16,15 +16,12 @@
         .main-content { flex: 1; padding: 10px 15px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; overflow-y: auto; }
         .container { max-width: 1200px; width: 100%; margin: 0 auto; position: relative; display: flex; flex-direction: column; min-height: 100%; }
 
+        /* ホームリンクのスタイル */
+        .back-home { display: inline-flex; align-items: center; text-decoration: none; color: var(--primary); font-weight: bold; font-size: 1rem; margin-bottom: 10px; }
+        .back-home:hover { opacity: 0.7; }
+
         .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-        .version-badge { 
-            font-size: 1rem; 
-            color: #475569; 
-            background-color: #e2e8f0; 
-            padding: 2px 12px; 
-            border-radius: 20px; 
-            font-weight: 500;
-        }
+        .version-badge { font-size: 1rem; color: #475569; background-color: #e2e8f0; padding: 2px 12px; border-radius: 20px; font-weight: 500; }
         
         h1 { font-size: 1.5rem; margin: 0; color: #1e293b; }
 
@@ -44,7 +41,6 @@
         .thumb-item { border: 2px solid #cbd5e1; border-radius: 6px; cursor: pointer; background: #fff; position: relative; padding: 2px; flex-shrink: 0; }
         .thumb-item.active { border-color: var(--primary); }
         .thumb-item img { width: 100%; aspect-ratio: 1.4/1; object-fit: contain; background: #eee; display: block; }
-        .thumb-status { position: absolute; top: -5px; right: -5px; background: var(--success); color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 1px solid white; z-index: 5; }
 
         .editor-main { background: white; border-radius: 8px; border: 1px solid var(--border); padding: 8px; display: flex; flex-direction: column; }
         .stage-wrap { height: 400px; background: #0f172a; border-radius: 6px; overflow: hidden; margin-bottom: 8px; position: relative; display: flex; align-items: center; justify-content: center; }
@@ -71,10 +67,7 @@
             .stage-wrap { width: 55%; height: 28vh; min-height: 200px; margin-bottom: 0; }
             .correction-panel { width: 40%; flex: 1; padding: 5px; }
             .controls-flex { flex-direction: column; align-items: stretch; }
-            .tool-group { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-            .correction-list { flex-direction: column; gap: 4px; }
             .btn-confirm { width: 100%; padding: 12px 5px; }
-            .guide-area p { font-size: 1rem; }
         }
     </style>
 </head>
@@ -84,6 +77,8 @@
 
 <main class="main-content">
     <div class="container">
+        <a href="index.html" class="back-home">🏠 ホームへ戻る</a>
+
         <div class="header-flex">
             <h1>📑 Image to PDF Maker</h1>
             <div class="version-badge">Version 1.62</div>
@@ -95,7 +90,7 @@
         </div>
 
         <div class="limit-box">
-            <span>💡 <b>ご利用の目安：</b> 推奨サイズは200MB程度です。デバイスのメモリ状況により時間がかかる場合があります。</span>
+            <span>💡 <b>ご利用の目安：</b> 推奨サイズは200MB程度です。</span>
         </div>
         
         <button class="btn-tool" style="background:var(--danger); width:100%; margin-bottom:8px;" onclick="resetAll()">全てのデータを初期化して読み直す</button>
@@ -136,17 +131,27 @@
         <div class="footer-disclaimer">
             【免責事項・ご注意】<br>
             ・本ツールは個人開発のWebアプリです。処理はすべてブラウザ内で完結します。<br>
-            ・パスワード保護されたPDFは解析できません。<br>
             ・本ツールの使用によるデータの損失等について一切の責任を負いかねます。
         </div>
     </div>
 </main>
 
 <script>
+    // sidebar.html を読み込む際に、サイドバー内にホームリンクがあるか確認し、
+    // メイン領域の重複したホームリンクを調整する処理を追加
+    fetch('sidebar.html').then(res => res.text()).then(html => { 
+        document.getElementById('pc-sidebar').innerHTML = html;
+        if (window.innerWidth > 768) {
+            // PC版でサイドバーが読み込まれたら、コンテンツ内のホームボタンは隠す（サイドバーにあるため）
+            document.querySelector('.back-home').style.display = 'none';
+        }
+    }).catch(() => { 
+        document.getElementById('pc-sidebar').innerHTML = '<div style="padding:15px;">Menu</div>'; 
+    });
+
+    // --- 以降、画像処理ロジックは Ver 1.62 を継承 ---
     let filesData = []; let activeIdx = -1; let cropper = null;
     const paperMap = { a4: [210, 297], a3: [297, 420], b4: [250, 353] };
-
-    fetch('sidebar.html').then(res => res.text()).then(html => { document.getElementById('pc-sidebar').innerHTML = html; }).catch(() => { document.getElementById('pc-sidebar').innerHTML = '<div style="padding:15px;">Menu</div>'; });
 
     document.getElementById('drop-zone').onclick = () => document.getElementById('file-input').click();
     document.getElementById('file-input').onchange = (e) => handleFiles(e.target.files);
@@ -286,7 +291,7 @@
         const pdf = new jsPDF(o, 'mm', s);
         let added = 0;
         filesData.forEach((d) => { if (d.proc) { if (added > 0) pdf.addPage(s, o); pdf.addImage(d.proc, 'JPEG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight()); added++; } });
-        if (added > 0) pdf.save(`Smart_PDF_Scanner_v1.59.pdf`);
+        if (added > 0) pdf.save(`Smart_PDF_Maker_v1.62.pdf`);
     };
 </script>
 </body>
