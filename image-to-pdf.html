@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Multi-Scan PDF Converter - Ver 1.21</title>
+    <title>Multi-Scan PDF Converter - Ver 1.22</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
@@ -10,31 +10,21 @@
     <style>
         :root { --primary: #2563eb; --success: #059669; --bg: #f8fafc; --sidebar-width: 260px; }
         body { font-family: sans-serif; background: var(--bg); margin: 0; display: flex; color: #1e293b; min-height: 100vh; }
-
         #sidebar-container { width: var(--sidebar-width); background: white; border-right: 1px solid #e2e8f0; position: fixed; height: 100vh; overflow-y: auto; z-index: 1000; }
         .main-content { flex: 1; margin-left: var(--sidebar-width); padding: 40px 20px; display: flex; justify-content: center; }
         .container { max-width: 850px; width: 100%; position: relative; }
         .version { position: absolute; top: 0; right: 0; font-size: 0.8rem; font-weight: bold; color: #94a3b8; }
-        
         .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; margin-bottom: 20px; }
-        
         .option-group { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 15px 0; padding: 15px; background: #f1f5f9; border-radius: 8px; }
         .option-item { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer; }
-
         .drop-zone { border: 2px dashed #3b82f6; padding: 40px; text-align: center; border-radius: 12px; cursor: pointer; background: #f0f9ff; }
-        
         #file-list { margin-top: 20px; border-top: 1px solid #eee; }
         .file-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; font-size: 0.85rem; }
         .status-ready { color: var(--success); font-weight: bold; }
-
         .crop-area { display: none; margin-top: 20px; }
         .crop-container { width: 100%; max-height: 500px; background: #000; border-radius: 8px; overflow: hidden; }
-
-        /* 回転ボタンのスタイル */
         .edit-toolbar { display: flex; gap: 10px; margin-bottom: 10px; }
         .btn-tool { background: #475569; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: bold; }
-        .btn-tool:hover { background: #1e293b; }
-
         .btn-action { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
         .btn-pdf { background: var(--success); margin-top: 30px; font-size: 1.2rem; }
     </style>
@@ -45,21 +35,22 @@
 
 <main class="main-content">
     <div class="container">
-        <div class="version">Ver 1.21</div>
-        <h1 style="margin-top: 0; font-size: 1.5rem;">🖼️ Multi-Scan & Rotation Converter</h1>
+        <div class="version">Ver 1.22</div>
+        <h1 style="margin-top: 0; font-size: 1.5rem;">🖼️ Fixed-Ratio Scan PDF</h1>
 
         <div class="card">
             <div style="display:flex; gap:15px; margin-bottom:15px;">
                 <div style="flex:1;">
                     <label style="font-size:0.8rem; font-weight:bold; color:#64748b;">用紙サイズ</label>
-                    <select id="paper-size" style="width:100%; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
+                    <select id="paper-size" onchange="updateCropRatio()" style="width:100%; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
                         <option value="a4">A4</option><option value="a3">A3</option><option value="b4" selected>B4</option>
                     </select>
                 </div>
                 <div style="flex:1;">
                     <label style="font-size:0.8rem; font-weight:bold; color:#64748b;">用紙の向き</label>
-                    <select id="paper-orientation" style="width:100%; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
-                        <option value="p">縦向き</option><option value="l">横向き</option>
+                    <select id="paper-orientation" onchange="updateCropRatio()" style="width:100%; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
+                        <option value="p">縦向き (Portrait)</option>
+                        <option value="l" selected>横向き (Landscape)</option>
                     </select>
                 </div>
             </div>
@@ -82,11 +73,12 @@
         </div>
 
         <div id="crop-area" class="card crop-area">
-            <h3 id="editing-filename" style="margin-top:0; font-size:1.1rem;">範囲と向きの調整</h3>
+            <h3 id="editing-filename" style="margin-top:0; font-size:1.1rem;">範囲の調整（比率固定中）</h3>
             
             <div class="edit-toolbar">
-                <button class="btn-tool" id="rotate-left">↺ 左90°回転</button>
-                <button class="btn-tool" id="rotate-right">↻ 右90°回転</button>
+                <button class="btn-tool" id="rotate-left">↺ 左に90°</button>
+                <button class="btn-tool" id="rotate-right">↻ 右に90°</button>
+                <span style="font-size: 0.8rem; color: #64748b; margin-left: auto;">※選択サイズに合わせて比率を固定しています</span>
             </div>
 
             <div class="crop-container"><img id="crop-target"></div>
@@ -120,6 +112,16 @@
         if (filesQueue.length > 0) startEditing(0);
     }
 
+    // ★比率を計算してCropperに反映させる関数
+    function updateCropRatio() {
+        if (!cropper) return;
+        const sizeKey = document.getElementById('paper-size').value;
+        const orient = document.getElementById('paper-orientation').value;
+        let [w, h] = paperMap[sizeKey];
+        const ratio = (orient === 'p') ? w / h : h / w;
+        cropper.setAspectRatio(ratio);
+    }
+
     function updateFileList() {
         const list = document.getElementById('file-list');
         list.innerHTML = "";
@@ -143,31 +145,38 @@
             const img = document.getElementById('crop-target');
             img.src = e.target.result;
             if (cropper) cropper.destroy();
+
+            // 初期化時に比率をセット
+            const sizeKey = document.getElementById('paper-size').value;
+            const orient = document.getElementById('paper-orientation').value;
+            let [w, h] = paperMap[sizeKey];
+            const ratio = (orient === 'p') ? w / h : h / w;
             
             cropper = new Cropper(img, {
-                autoCropArea: 0.9,
+                aspectRatio: ratio,
                 viewMode: 1,
+                autoCropArea: 0.9,
                 background: false,
             });
         };
         reader.readAsDataURL(filesQueue[index]);
     }
 
-    // 回転ボタンのイベント
     document.getElementById('rotate-left').onclick = () => cropper.rotate(-90);
     document.getElementById('rotate-right').onclick = () => cropper.rotate(90);
 
     document.getElementById('apply-crop').onclick = () => {
         const sizeKey = document.getElementById('paper-size').value;
-        const [pW, pH] = paperMap[sizeKey];
+        const orient = document.getElementById('paper-orientation').value;
+        let [pW, pH] = paperMap[sizeKey];
+        if (orient === 'l') [pW, pH] = [pH, pW];
         
-        // 回転が適用された状態のキャンバスを取得
-        let canvas = cropper.getCroppedCanvas({ 
-            width: pW * 3.5, // 高画質化
+        // 固定された比率でキャンバスを生成（高画質）
+        const canvas = cropper.getCroppedCanvas({ 
+            width: pW * 3.5,
             imageSmoothingQuality: 'high'
         });
 
-        // 補正フィルターの適用
         const shadow = document.getElementById('opt-shadow').checked;
         const binary = document.getElementById('opt-binary').checked;
         const sharp = document.getElementById('opt-sharp').checked;
@@ -179,7 +188,7 @@
         let filterStr = "";
         if (shadow) filterStr += "brightness(1.08) ";
         if (binary) filterStr += "grayscale(1) contrast(2.2) ";
-        if (sharp) filterStr += "saturate(0) contrast(1.1) "; // シャープ風
+        if (sharp) filterStr += "saturate(0) contrast(1.1) ";
 
         tCtx.filter = filterStr || 'none';
         tCtx.drawImage(canvas, 0, 0);
@@ -195,7 +204,6 @@
         const orient = document.getElementById('paper-orientation').value;
         const sizeKey = document.getElementById('paper-size').value;
         const [pW, pH] = paperMap[sizeKey];
-        
         const pdf = new jsPDF(orient, 'mm', sizeKey);
 
         processedImages.forEach((data, i) => {
@@ -205,7 +213,7 @@
             pdf.addImage(data, 'JPEG', 0, 0, w, h);
         });
 
-        pdf.save("Scanned_Documents_Combined.pdf");
+        pdf.save(`Scanned_B4_Fixed.pdf`);
     };
 </script>
 </body>
