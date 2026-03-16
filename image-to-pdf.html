@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Smart PDF Scanner - Ver 1.36</title>
+    <title>Smart PDF Scanner - Ver 1.37</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
@@ -24,12 +24,12 @@
         
         .workspace { display: grid; grid-template-columns: 180px 1fr; gap: 20px; margin-top: 20px; display: none; }
         .file-list { display: flex; flex-direction: column; gap: 10px; max-height: 600px; overflow-y: auto; }
-        .thumb-item { border: 2px solid transparent; border-radius: 8px; cursor: pointer; background: #fff; overflow: hidden; position: relative; transition: 0.2s; }
+        .thumb-item { border: 2px solid transparent; border-radius: 8px; cursor: pointer; background: #fff; overflow: hidden; position: relative; }
         .thumb-item.active { border-color: var(--primary); box-shadow: 0 0 10px rgba(37,99,235,0.2); }
         .thumb-item img { width: 100%; aspect-ratio: 1/1.4; object-fit: contain; background: #eee; display: block; }
         .thumb-status { position: absolute; top: 3px; right: 3px; background: var(--success); color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; display: flex; align-items: center; justify-content: center; }
 
-        .editor-main { background: white; border-radius: 12px; border: 1px solid var(--border); padding: 20px; overflow: hidden; }
+        .editor-main { background: white; border-radius: 12px; border: 1px solid var(--border); padding: 20px; }
         .stage-wrap { width: 100%; height: 450px; background: #1e293b; border-radius: 8px; overflow: hidden; margin-bottom: 15px; position: relative; }
         #stage-image { max-width: 100%; display: block; }
 
@@ -37,7 +37,6 @@
         .controls-flex { display: flex; flex-wrap: wrap; gap: 15px; justify-content: space-between; align-items: center; }
         .tool-group { display: flex; gap: 8px; }
         .btn-tool { background: #475569; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
-        .btn-sync { background: #ef4444; }
         .correction-list { display: flex; gap: 12px; border-left: 2px solid #cbd5e1; padding-left: 15px; }
         .check-item { display: flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: bold; cursor: pointer; color: #475569; }
         .btn-confirm { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
@@ -50,10 +49,11 @@
 
 <main class="main-content">
     <div class="container">
-        <div class="version">Ver 1.36</div>
+        <div class="version">Ver 1.37</div>
         <h1 style="margin-top: 0; font-size: 1.8rem; color: #0f172a;">📑 Smart PDF Scanner</h1>
         <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 25px;">
-            「書類にフィット」は画像サイズを解析し、用紙比率を守りながら枠を最大限に広げます。
+            複数画像をドロップして一括読み込み。画像ごとに向き、台形補正、画質をリアルタイムに調整できます。
+            すべての調整が完了したら、最下部のボタンで1枚のPDFに結合して保存します。
         </p>
 
         <div class="card">
@@ -79,17 +79,17 @@
 
         <div class="workspace" id="workspace">
             <div class="file-list" id="thumb-list"></div>
-            <div class="editor-main" id="editor-main">
+            <div class="editor-main">
                 <div class="stage-wrap"><img id="stage-image"></div>
                 <div class="correction-panel">
                     <div class="controls-flex">
                         <div class="tool-group">
                             <button class="btn-tool" onclick="rotateImage(-90)">↺ 左90°</button>
                             <button class="btn-tool" onclick="rotateImage(90)">↻ 右90°</button>
-                            <button class="btn-tool btn-sync" onclick="smartFitToPaper()" title="画像内で枠を最大化します">書類にフィット</button>
+                            <button class="btn-tool" onclick="smartFitToPaper()">書類にフィット</button>
                         </div>
                         <div class="correction-list">
-                            <label class="check-item"><input type="checkbox" id="opt-trap" checked onchange="toggleCropper()"> 台形補正</label>
+                            <label class="check-item"><input type="checkbox" id="opt-trap" checked onchange="recordCurrentSettings()"> 台形補正</label>
                             <label class="check-item"><input type="checkbox" id="opt-bw" checked onchange="recordCurrentSettings()"> 白黒補正</label>
                             <label class="check-item"><input type="checkbox" id="opt-sharp" onchange="recordCurrentSettings()"> シャープ</label>
                             <label class="check-item"><input type="checkbox" id="opt-white" checked onchange="recordCurrentSettings()"> 背景白飛</label>
@@ -104,10 +104,7 @@
 </main>
 
 <script>
-    let filesData = []; 
-    let activeIdx = -1; 
-    let cropper = null;
-    const MAX_FILES = 30;
+    let filesData = []; let activeIdx = -1; let cropper = null;
     const paperMap = { a4: [210, 297], a3: [297, 420], b4: [250, 353] };
 
     fetch('sidebar.html').then(res => res.text()).then(html => document.getElementById('sidebar-container').innerHTML = html);
@@ -118,8 +115,7 @@
     async function handleFiles(files) {
         if (!files.length) return;
         const currentTotal = filesData.length;
-        const remaining = MAX_FILES - currentTotal;
-        const filesToProcess = Array.from(files).slice(0, remaining);
+        const filesToProcess = Array.from(files).slice(0, 30 - currentTotal);
 
         for (let file of filesToProcess) {
             const img = await new Promise(res => {
@@ -132,11 +128,9 @@
                 settings: { trap:true, bw:true, sharp:false, white:true, deg:0, cropData:null } 
             });
         }
-        if (filesData.length > 0) {
-            document.getElementById('workspace').style.display = 'grid';
-            renderThumbnails(); 
-            openEditor(currentTotal); 
-        }
+        document.getElementById('workspace').style.display = 'grid';
+        renderThumbnails(); 
+        openEditor(currentTotal); 
     }
 
     function renderThumbnails() {
@@ -153,10 +147,8 @@
 
     function openEditor(idx) {
         if (cropper) cropper.destroy();
-        activeIdx = idx; 
-        const data = filesData[idx];
-        const img = document.getElementById('stage-image');
-        img.src = data.orig.src;
+        activeIdx = idx; const data = filesData[idx];
+        const img = document.getElementById('stage-image'); img.src = data.orig.src;
 
         document.getElementById('opt-trap').checked = data.settings.trap;
         document.getElementById('opt-bw').checked = data.settings.bw;
@@ -169,18 +161,11 @@
             const ratio = (orient === 'p') ? paperMap[sizeKey][0]/paperMap[sizeKey][1] : paperMap[sizeKey][1]/paperMap[sizeKey][0];
             
             cropper = new Cropper(img, { 
-                aspectRatio: ratio, 
-                viewMode: 1, 
-                background: false,
-                autoCropArea: 1, // 初期状態で最大化
+                aspectRatio: ratio, viewMode: 1, background: false, autoCropArea: 1,
                 ready() {
                     if (data.settings.deg !== 0) cropper.rotate(data.settings.deg);
-                    if (data.settings.cropData) {
-                        cropper.setData(data.settings.cropData);
-                    } else {
-                        smartFitToPaper(); // 初回読み込み時も最適化
-                    }
-                    if (!data.settings.trap) cropper.disable();
+                    if (data.settings.cropData) cropper.setData(data.settings.cropData);
+                    else smartFitToPaper();
                 }
             });
             img.onload = null;
@@ -202,44 +187,21 @@
 
     function rotateImage(val) { if (cropper) { cropper.rotate(val); recordCurrentSettings(); } }
 
-    function toggleCropper() {
-        if (!cropper) return;
-        if (document.getElementById('opt-trap').checked) cropper.enable(); else cropper.disable();
-        recordCurrentSettings();
-    }
-
-    // ★ 高精度スマートフィットロジック
     function smartFitToPaper() {
         if (!cropper) return;
-        const containerData = cropper.getContainerData();
         const canvasData = cropper.getCanvasData();
         const sizeKey = document.getElementById('paper-size').value;
         const orient = document.getElementById('paper-orientation').value;
         const targetRatio = (orient === 'p') ? paperMap[sizeKey][0]/paperMap[sizeKey][1] : paperMap[sizeKey][1]/paperMap[sizeKey][0];
+        const imgRatio = canvasData.width / canvasData.height;
 
-        // 画像の表示上の幅と高さ
-        const imgW = canvasData.width;
-        const imgH = canvasData.height;
-        const imgRatio = imgW / imgH;
+        let nW = canvasData.width, nH = canvasData.height;
+        if (imgRatio > targetRatio) nW = nH * targetRatio; else nH = nW / targetRatio;
 
-        let newW, newH;
-
-        if (imgRatio > targetRatio) {
-            // 画像の方が横長い -> 高さを画像に合わせる
-            newH = imgH;
-            newW = imgH * targetRatio;
-        } else {
-            // 画像の方が縦長い -> 幅を画像に合わせる
-            newW = imgW;
-            newH = imgW / targetRatio;
-        }
-
-        // 中央に配置
         cropper.setCropBoxData({
-            left: canvasData.left + (imgW - newW) / 2,
-            top: canvasData.top + (imgH - newH) / 2,
-            width: newW,
-            height: newH
+            left: canvasData.left + (canvasData.width - nW) / 2,
+            top: canvasData.top + (canvasData.height - nH) / 2,
+            width: nW, height: nH
         });
         recordCurrentSettings();
     }
@@ -248,19 +210,19 @@
         if (!cropper) return;
         const sizeKey = document.getElementById('paper-size').value;
         const orient = document.getElementById('paper-orientation').value;
-        const ratio = (orient === 'p') ? paperMap[sizeKey][0]/paperMap[sizeKey][1] : paperMap[sizeKey][1]/paperMap[sizeKey][0];
-        cropper.setAspectRatio(ratio);
-        smartFitToPaper(); // 比率変更時に即フィット
+        cropper.setAspectRatio((orient === 'p') ? paperMap[sizeKey][0]/paperMap[sizeKey][1] : paperMap[sizeKey][1]/paperMap[sizeKey][0]);
+        smartFitToPaper();
     }
 
     async function applyAndNext() {
         if (!cropper) return;
-        recordCurrentSettings(); 
+        recordCurrentSettings();
         
         const sizeKey = document.getElementById('paper-size').value;
         const orient = document.getElementById('paper-orientation').value;
         let [pW, pH] = (orient === 'p') ? paperMap[sizeKey] : [paperMap[sizeKey][1], paperMap[sizeKey][0]];
 
+        // 補正処理を適用した最終画像を生成して保存
         const croppedCanvas = cropper.getCroppedCanvas({ width: pW * 3.5 });
         const finalCanvas = document.createElement('canvas');
         finalCanvas.width = croppedCanvas.width; finalCanvas.height = croppedCanvas.height;
@@ -271,15 +233,13 @@
         if (s.bw) filters.push('grayscale(1)');
         if (s.white) filters.push('contrast(1.2) brightness(1.05)');
         if (s.sharp) filters.push('saturate(0) contrast(1.1)');
+        
         ctx.filter = filters.length ? filters.join(' ') : 'none';
         ctx.drawImage(croppedCanvas, 0, 0);
 
         filesData[activeIdx].proc = finalCanvas.toDataURL('image/jpeg', 0.9);
         renderThumbnails();
-        
-        if (activeIdx < filesData.length - 1) {
-            openEditor(activeIdx + 1);
-        }
+        if (activeIdx < filesData.length - 1) openEditor(activeIdx + 1);
     }
 
     document.getElementById('download-pdf').onclick = () => {
@@ -287,15 +247,16 @@
         const sizeKey = document.getElementById('paper-size').value;
         const orient = document.getElementById('paper-orientation').value;
         const pdf = new jsPDF(orient, 'mm', sizeKey);
-        let added = 0;
+        
+        let count = 0;
         filesData.forEach(d => {
             if (d.proc) {
-                if (added > 0) pdf.addPage(sizeKey, orient);
+                if (count > 0) pdf.addPage(sizeKey, orient);
                 pdf.addImage(d.proc, 'JPEG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
-                added++;
+                count++;
             }
         });
-        pdf.save(`Scan_Combined_Ver1.36.pdf`);
+        pdf.save(`Scan_Combined_Ver1.37.pdf`);
     };
 </script>
 </body>
