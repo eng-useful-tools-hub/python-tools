@@ -10,75 +10,71 @@
     
     <style>
         :root { --primary: #2563eb; --success: #059669; --danger: #dc2626; --warning: #fff7ed; --bg: #f1f5f9; --text: #1e293b; --border: #cbd5e1; --sidebar-width: 260px; }
-        
-        /* 基本フォントを1remに設定 */
-        body { font-family: sans-serif; background: var(--bg); margin: 0; display: flex; color: var(--text); height: 100vh; overflow: hidden; font-size: 1rem; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; display: flex; color: var(--text); height: 100vh; overflow: hidden; }
         
         #pc-sidebar { width: var(--sidebar-width); background: white; border-right: 1px solid #e2e8f0; height: 100vh; display: flex; flex-direction: column; flex-shrink: 0; }
-        .main-content { flex: 1; padding: 15px 20px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; overflow-y: auto; }
+        .main-content { flex: 1; padding: 10px 15px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; overflow-y: auto; }
         .container { max-width: 1200px; width: 100%; margin: 0 auto; position: relative; display: flex; flex-direction: column; min-height: 100%; }
 
-        /* ヘッダー周り */
-        .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .version-badge { font-size: 1rem; color: #475569; background-color: #e2e8f0; padding: 4px 16px; border-radius: 20px; font-weight: 500; }
-        h1 { font-size: 1.8rem; margin: 0; color: #1e293b; }
-
-        /* ガイド・目安（すべて1rem以上） */
-        .guide-area { background: #eff6ff; border-left: 4px solid var(--primary); padding: 15px; margin-bottom: 10px; border-radius: 4px; }
-        .guide-area p { font-size: 1.1rem; margin: 0 0 8px 0; line-height: 1.6; }
+        .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .version-badge { 
+            font-size: 1rem; 
+            color: #475569; 
+            background-color: #e2e8f0; 
+            padding: 2px 12px; 
+            border-radius: 20px; 
+            font-weight: 500;
+        }
         
-        .limit-box { background: var(--warning); border: 1px solid #ffedd5; padding: 12px; margin-bottom: 12px; border-radius: 8px; }
+        h1 { font-size: 1.5rem; margin: 0; color: #1e293b; }
+
+        .guide-area { background: #eff6ff; border-left: 4px solid var(--primary); padding: 12px; margin-bottom: 8px; border-radius: 4px; }
+        .guide-area p { font-size: 1rem; margin: 0 0 6px 0; line-height: 1.5; }
+        
+        .limit-box { background: var(--warning); border: 1px solid #ffedd5; padding: 10px; margin-bottom: 8px; border-radius: 8px; }
         .limit-box span { font-size: 1rem; color: #9a3412; font-weight: bold; }
 
-        /* ナビゲーション・ラベル */
-        .top-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px; }
-        .card-mini { background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; }
-        select { width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 1rem; background: #fff; margin-top: 4px; }
+        .top-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 8px; }
+        .card-mini { background: white; padding: 5px 8px; border-radius: 6px; border: 1px solid #e2e8f0; }
+        select { width: 100%; padding: 4px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 1rem; background: #fff; }
         label { font-size: 1rem; font-weight: bold; color: #64748b; display: block; }
 
-        /* ワークスペース */
-        .workspace { display: grid; grid-template-columns: 200px 1fr; gap: 15px; flex: 1; min-height: 0; display: none; margin-bottom: 12px; }
-        .file-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; background: #e5eaf0; padding: 12px; border-radius: 8px; border: 1px solid var(--border); }
-        .thumb-item { border: 3px solid #cbd5e1; border-radius: 8px; cursor: pointer; background: #fff; position: relative; padding: 4px; flex-shrink: 0; }
-        .thumb-info { font-size: 1rem; text-align: center; color: #475569; margin-top: 5px; font-weight: bold; }
+        .workspace { display: grid; grid-template-columns: 160px 1fr; gap: 10px; flex: 1; min-height: 0; display: none; margin-bottom: 8px; }
+        .file-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; background: #e5eaf0; padding: 8px; border-radius: 8px; border: 1px solid var(--border); }
+        .thumb-item { border: 2px solid #cbd5e1; border-radius: 6px; cursor: pointer; background: #fff; position: relative; padding: 2px; flex-shrink: 0; }
+        .thumb-item.active { border-color: var(--primary); }
+        .thumb-item img { width: 100%; aspect-ratio: 1.4/1; object-fit: contain; background: #eee; display: block; }
+        .thumb-status { position: absolute; top: -5px; right: -5px; background: var(--success); color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 1px solid white; z-index: 5; }
 
-        /* エディタ */
-        .editor-main { background: white; border-radius: 8px; border: 1px solid var(--border); padding: 12px; display: flex; flex-direction: column; }
-        .stage-wrap { height: 420px; background: #0f172a; border-radius: 6px; overflow: hidden; margin-bottom: 10px; position: relative; display: flex; align-items: center; justify-content: center; }
+        .editor-main { background: white; border-radius: 8px; border: 1px solid var(--border); padding: 8px; display: flex; flex-direction: column; }
+        .stage-wrap { height: 400px; background: #0f172a; border-radius: 6px; overflow: hidden; margin-bottom: 8px; position: relative; display: flex; align-items: center; justify-content: center; }
+        #stage-image { display: block; max-width: 100%; max-height: 100%; }
 
-        /* 操作パネル */
-        .correction-panel { background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; }
-        .controls-flex { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
-        .btn-tool { background: #475569; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 1rem; font-weight: bold; }
-        .btn-confirm { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1.1rem; }
-        .correction-list { display: flex; flex-wrap: wrap; gap: 10px; }
-        .check-item { display: flex; align-items: center; gap: 5px; font-size: 1rem; font-weight: bold; cursor: pointer; background: #fff; padding: 4px 10px; border-radius: 4px; border: 1px solid #ddd; }
+        .correction-panel { background: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; }
+        .controls-flex { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+        .btn-tool { background: #475569; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 1rem; font-weight: bold; }
+        .btn-confirm { background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+        .correction-list { display: flex; flex-wrap: wrap; gap: 5px; }
+        .check-item { display: flex; align-items: center; gap: 3px; font-size: 15rem; font-weight: bold; cursor: pointer; background: #fff; padding: 2px 6px; border-radius: 4px; border: 1px solid #ddd; }
 
-        .btn-pdf { background: var(--success); color: white; border: none; padding: 18px; border-radius: 10px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1.3rem; margin-top: 10px; display: none; }
-
-        /* 免責事項（フォントサイズを1remに拡大） */
-        .footer-disclaimer { 
-            font-size: 1rem; 
-            color: #64748b; 
-            text-align: center; 
-            padding: 25px 0 40px; 
-            line-height: 1.8; 
-            border-top: 1px solid #e2e8f0; 
-            background: #fff; 
-            margin-top: auto; 
-        }
+        .btn-pdf { background: var(--success); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1rem; margin-top: 5px; display: none; }
+        .footer-disclaimer { font-size: 11px; color: #64748b; text-align: center; padding: 15px 0; line-height: 1.6; border-top: 1px solid #e2e8f0; background: #fff; margin-top: auto; }
 
         @media (max-width: 768px) {
             #pc-sidebar { display: none; }
             body { overflow-y: auto; height: auto; }
-            .main-content { padding: 10px; height: auto; }
+            .main-content { padding: 8px; height: auto; }
             .workspace { grid-template-columns: 1fr; display: flex; flex-direction: column; }
-            .file-list { flex-direction: row; overflow-x: auto; height: 140px; padding: 10px; }
-            .thumb-item { width: 140px; height: 110px; }
-            .stage-wrap { width: 55%; height: 30vh; min-height: 220px; }
-            .correction-panel { width: 40%; flex: 1; }
-            h1 { font-size: 1.3rem; }
-            .guide-area p, .footer-disclaimer { font-size: 1rem; }
+            .file-list { flex-direction: row; overflow-x: auto; height: 110px; padding: 5px; }
+            .thumb-item { width: 120px; height: 90px; }
+            .editor-main { flex-direction: row; flex-wrap: wrap; align-items: flex-start; gap: 10px; }
+            .stage-wrap { width: 55%; height: 28vh; min-height: 200px; margin-bottom: 0; }
+            .correction-panel { width: 40%; flex: 1; padding: 5px; }
+            .controls-flex { flex-direction: column; align-items: stretch; }
+            .tool-group { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+            .correction-list { flex-direction: column; gap: 4px; }
+            .btn-confirm { width: 100%; padding: 12px 5px; }
+            .guide-area p { font-size: 1rem; }
         }
     </style>
 </head>
@@ -89,8 +85,8 @@
 <main class="main-content">
     <div class="container">
         <div class="header-flex">
-            <h1>📑 Image to PDF Maker</h1>
-            <div class="version-badge">Version 1.60</div>
+            <h1>📑 Smart PDF Scanner</h1>
+            <div class="version-badge">Version 1.59</div>
         </div>
 
         <div class="guide-area">
@@ -99,16 +95,16 @@
         </div>
 
         <div class="limit-box">
-            <span>💡 ご利用の目安：推奨サイズは200MB程度です。デバイスの状況により時間がかかる場合があります。</span>
+            <span>💡 <b>ご利用の目安：</b> 推奨サイズは200MB程度です。デバイスのメモリ状況により時間がかかる場合があります。</span>
         </div>
         
-        <button class="btn-tool" style="background:var(--danger); width:100%; margin-bottom:12px;" onclick="resetAll()">全てのデータを初期化して読み直す</button>
+        <button class="btn-tool" style="background:var(--danger); width:100%; margin-bottom:8px;" onclick="resetAll()">全てのデータを初期化して読み直す</button>
 
         <div class="top-nav">
             <div class="card-mini"><label>用紙サイズ</label><select id="paper-size" onchange="updateRatio()"><option value="a4">A4</option><option value="a3">A3</option><option value="b4" selected>B4</option></select></div>
             <div class="card-mini"><label>向き</label><select id="paper-orientation" onchange="updateRatio()"><option value="p">縦</option><option value="l" selected>横</option></select></div>
-            <div id="drop-zone" class="card-mini" style="border: 2px dashed var(--primary); background: #f0f9ff; cursor: pointer; display: flex; align-items: center; justify-content: center; text-align: center;">
-                <span style="font-size: 1rem; font-weight: bold; color: var(--primary);">📥 画像を追加ドロップ</span>
+            <div id="drop-zone" class="card-mini" style="border: 1px dashed var(--primary); background: #f0f9ff; cursor: pointer; display: flex; align-items: center; justify-content: center; text-align: center;">
+                <span style="font-size: 1rem; font-weight: bold; color: var(--primary);">📥 追加ドロップ</span>
             </div>
             <input type="file" id="file-input" multiple accept="image/*" style="display:none;">
         </div>
@@ -147,7 +143,6 @@
 </main>
 
 <script>
-    /* JavaScriptロジックは Ver 1.59 を継承 */
     let filesData = []; let activeIdx = -1; let cropper = null;
     const paperMap = { a4: [210, 297], a3: [297, 420], b4: [250, 353] };
 
@@ -291,7 +286,7 @@
         const pdf = new jsPDF(o, 'mm', s);
         let added = 0;
         filesData.forEach((d) => { if (d.proc) { if (added > 0) pdf.addPage(s, o); pdf.addImage(d.proc, 'JPEG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight()); added++; } });
-        if (added > 0) pdf.save(`Smart_PDF_Maker_v1.60.pdf`);
+        if (added > 0) pdf.save(`Smart_PDF_Scanner_v1.59.pdf`);
     };
 </script>
 </body>
