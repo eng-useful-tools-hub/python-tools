@@ -2,37 +2,48 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Smart PDF Scanner - Ver 1.41</title>
+    <title>Smart PDF Scanner - Ver 1.42</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     
     <style>
-        :root { --primary: #2563eb; --success: #059669; --bg: #f1f5f9; --text: #1e293b; --border: #cbd5e1; --sidebar-width: 260px; }
+        :root { --primary: #2563eb; --success: #059669; --danger: #dc2626; --bg: #f1f5f9; --text: #1e293b; --border: #cbd5e1; --sidebar-width: 260px; }
         body { font-family: sans-serif; background: var(--bg); margin: 0; display: flex; color: var(--text); min-height: 100vh; }
         #sidebar-container { width: var(--sidebar-width); background: white; border-right: 1px solid #e2e8f0; position: fixed; height: 100vh; overflow-y: auto; z-index: 1000; }
         .main-content { flex: 1; margin-left: var(--sidebar-width); padding: 30px; display: flex; justify-content: center; }
-        .container { max-width: 1000px; width: 100%; position: relative; }
+        .container { max-width: 1100px; width: 100%; position: relative; }
         .version { position: absolute; top: 0; right: 0; font-size: 0.8rem; font-weight: bold; color: #94a3b8; padding: 2px 8px; border-radius: 4px; background: #eee; }
         
         .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; margin-bottom: 20px; }
+        .config-group { display: flex; gap: 15px; margin-bottom: 20px; padding: 15px; background: #fafafa; border-radius: 8px; border: 1px solid #eee; }
+        .config-item { flex: 1; }
+        label { font-size: 0.8rem; font-weight: bold; color: #64748b; }
+        select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.95rem; margin-top: 5px; background: #fff; }
+        
         .drop-zone { border: 2px dashed var(--primary); padding: 30px; text-align: center; border-radius: 12px; cursor: pointer; background: #f0f9ff; }
         
-        .workspace { display: grid; grid-template-columns: 180px 1fr; gap: 20px; margin-top: 20px; display: none; }
-        .file-list { display: flex; flex-direction: column; gap: 10px; max-height: 600px; overflow-y: auto; }
-        .thumb-item { border: 2px solid transparent; border-radius: 8px; cursor: pointer; background: #fff; overflow: hidden; position: relative; padding: 5px; }
-        .thumb-item.active { border-color: var(--primary); box-shadow: 0 0 10px rgba(37,99,235,0.2); }
+        /* ワークスペース：左リストを広く、グリッド化 */
+        .workspace { display: grid; grid-template-columns: 240px 1fr; gap: 20px; margin-top: 20px; display: none; }
+        
+        /* 改良されたサムネイルリスト */
+        .file-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-height: 650px; overflow-y: auto; padding-right: 8px; align-content: start; }
+        .thumb-item { border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; background: #fff; overflow: hidden; position: relative; padding: 3px; transition: 0.2s; }
+        .thumb-item.active { border-color: var(--primary); background: #eff6ff; box-shadow: 0 0 8px rgba(37,99,235,0.3); }
         .thumb-item img { width: 100%; aspect-ratio: 1/1.4; object-fit: contain; background: #eee; display: block; border-radius: 4px; }
-        .thumb-status { position: absolute; top: 8px; right: 8px; background: var(--success); color: white; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; display: flex; align-items: center; justify-content: center; z-index: 10; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .thumb-info { font-size: 10px; text-align: center; color: #64748b; margin-top: 2px; }
+        .thumb-status { position: absolute; top: 5px; right: 5px; background: var(--success); color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; display: flex; align-items: center; justify-content: center; z-index: 10; font-weight: bold; }
 
         .editor-main { background: white; border-radius: 12px; border: 1px solid var(--border); padding: 20px; }
-        .stage-wrap { width: 100%; height: 450px; background: #1e293b; border-radius: 8px; overflow: hidden; margin-bottom: 15px; position: relative; }
+        .stage-wrap { width: 100%; height: 500px; background: #1e293b; border-radius: 8px; overflow: hidden; margin-bottom: 15px; position: relative; }
         #stage-image { max-width: 100%; display: block; }
 
         .correction-panel { background: #f1f5f9; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e1; }
         .controls-flex { display: flex; flex-wrap: wrap; gap: 15px; justify-content: space-between; align-items: center; }
         .tool-group { display: flex; gap: 8px; }
         .btn-tool { background: #475569; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
+        .btn-reset { background: var(--danger); }
+        
         .correction-list { display: flex; gap: 12px; border-left: 2px solid #cbd5e1; padding-left: 15px; }
         .check-item { display: flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: bold; cursor: pointer; color: #475569; }
         .btn-confirm { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
@@ -46,23 +57,26 @@
 
 <main class="main-content">
     <div class="container">
-        <div class="version">Ver 1.41</div>
+        <div class="version">Ver 1.42</div>
         <h1 style="margin-top: 0; font-size: 1.8rem; color: #0f172a;">📑 Smart PDF Scanner</h1>
-        <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 25px;">
-            【使い方】1枚ずつ調整して<strong>「ページ確定」</strong>を押してください。✓がついた画像がすべて1枚のPDFにまとまります。
+        <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 15px;">
+            画像をドロップして読み込み、1枚ずつ「ページ確定」をしてください。✓がついた画像が1つのPDFにまとまります。
         </p>
+        
+        <button class="btn-tool btn-reset" style="margin-bottom: 20px;" onclick="resetAll()">全てのデータを初期化して読み直す</button>
 
-        <div class="card">
+        <div class="card" id="upload-card">
             <div style="display:flex; gap:15px; margin-bottom:15px;">
                 <div style="flex:1;"><label>用紙サイズ</label><select id="paper-size" onchange="updateRatio()"><option value="a4">A4</option><option value="a3">A3</option><option value="b4" selected>B4</option></select></div>
                 <div style="flex:1;"><label>向き</label><select id="paper-orientation" onchange="updateRatio()"><option value="p">縦</option><option value="l" selected>横</option></select></div>
             </div>
-            <div class="drop-zone" id="drop-zone"><strong>写真をドロップ（最大30枚）</strong></div>
+            <div class="drop-zone" id="drop-zone"><strong>写真をここにドロップ</strong></div>
             <input type="file" id="file-input" multiple accept="image/*" style="display:none;">
         </div>
 
         <div class="workspace" id="workspace">
             <div class="file-list" id="thumb-list"></div>
+            
             <div class="editor-main">
                 <div class="stage-wrap"><img id="stage-image"></div>
                 <div class="correction-panel">
@@ -110,13 +124,29 @@
         renderThumbs(); openEditor(currentCount); 
     }
 
+    // 初期化関数
+    function resetAll() {
+        if(!confirm("読み込んだ画像とすべての設定を削除して初期化しますか？")) return;
+        filesData = [];
+        activeIdx = -1;
+        if(cropper) cropper.destroy();
+        document.getElementById('workspace').style.display = 'none';
+        document.getElementById('download-pdf-btn').style.display = 'none';
+        document.getElementById('thumb-list').innerHTML = "";
+        document.getElementById('file-input').value = "";
+    }
+
     function renderThumbs() {
         const list = document.getElementById('thumb-list'); list.innerHTML = "";
         let count = 0;
         filesData.forEach((d, i) => {
             const div = document.createElement('div');
             div.className = `thumb-item ${i === activeIdx ? 'active' : ''}`;
-            div.innerHTML = `<img src="${d.orig.src}">${d.proc ? '<div class="thumb-status">✓</div>' : ''}`;
+            div.innerHTML = `
+                <img src="${d.orig.src}">
+                <div class="thumb-info">Page ${i+1}</div>
+                ${d.proc ? '<div class="thumb-status">✓</div>' : ''}
+            `;
             div.onclick = () => { saveSettings(); openEditor(i); };
             list.appendChild(div);
             if (d.proc) count++;
@@ -203,14 +233,12 @@
         smartFit(); 
     }
 
-    // ★ ページ確定：個別にキャンバスを描画してデータ化する
     function applyPage() {
         if (!cropper) return;
         saveSettings();
         const s = document.getElementById('paper-size').value;
         const o = document.getElementById('paper-orientation').value;
         let [pW, pH] = (o === 'p') ? paperMap[s] : [paperMap[s][1], paperMap[s][0]];
-
         const canv = cropper.getCroppedCanvas({ width: pW * 3.5 });
         const final = document.createElement('canvas');
         final.width = canv.width; final.height = canv.height;
@@ -222,28 +250,25 @@
         if (set.sharp) filter += "saturate(0) contrast(1.1) ";
         ctx.filter = filter || "none";
         ctx.drawImage(canv, 0, 0);
-
         filesData[activeIdx].proc = final.toDataURL('image/jpeg', 0.9);
         renderThumbs();
         if (activeIdx < filesData.length - 1) openEditor(activeIdx + 1);
     }
 
-    // ★ PDF保存：filesData 全体をループして全ページを連結
     document.getElementById('download-pdf-btn').onclick = () => {
         const { jsPDF } = window.jspdf;
         const s = document.getElementById('paper-size').value;
         const o = document.getElementById('paper-orientation').value;
         const pdf = new jsPDF(o, 'mm', s);
-        
         let pageAdded = 0;
-        filesData.forEach((data, index) => {
+        filesData.forEach((data) => {
             if (data.proc) {
                 if (pageAdded > 0) pdf.addPage(s, o);
                 pdf.addImage(data.proc, 'JPEG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
                 pageAdded++;
             }
         });
-        if (pageAdded > 0) pdf.save(`Scan_Combined_v141.pdf`);
+        if (pageAdded > 0) pdf.save(`Scan_Combined_v142.pdf`);
     };
 </script>
 </body>
