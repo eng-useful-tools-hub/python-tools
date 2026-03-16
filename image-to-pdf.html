@@ -148,3 +148,157 @@
             const div = document.createElement('div');
             div.className = `thumb-item ${i === activeIdx ? 'active' : ''}`;
             div.id = `thumb-${i}`;
+            div.innerHTML = `<img src="${d.orig.src}">${d.proc ? '<div class="thumb-status">✓</div>' : ''}`;
+            div.onclick = () => { saveSettings(); openEditor(i); };
+            list.appendChild(div);
+            if (d.proc) count++;
+        });
+        const btn = document.getElementById('download-pdf-btn');
+        btn.innerText = `✓の全ページ (${count}枚) をPDF保存`;
+        btn.style.display = count > 0 ? 'block' : 'none';
+        if (activeIdx >= 0) {
+            const el = document.getElementById(`thumb-${activeIdx}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    function openEditor(idx) {
+        if (cropper) cropper.destroy();
+        activeIdx = idx; const d = filesData[idx];
+        const img = document.getElementById('stage-image'); img.src = d.orig.src;
+        document.getElementById('opt-bw').checked = d.settings.bw;
+        document.getElementById('opt-sharp').checked = d.settings.sharp;
+        document.getElementById('opt-white').checked = d.settings.white;
+        
+        img.onload = () => {
+            const s = document.getElementById('paper-size').value;
+            const o = document.getElementById('paper-orientation').value;
+            cropper = new Cropper(img, {
+                aspectRatio: (o === 'p') ? paperMap[s][0]/paperMap[s][1] : paperMap[s][1]/paperMap[s][0],
+                viewMode: 1, 
+                background: false,
+                autoCropArea: 1,
+                responsive: true,
+                ready() {
+                    if (d.settings.deg !== 0) cropper.rotate(d.settings.deg);
+                    if (d.settings.crop) cropper.setData(d.settings.crop);
+                    else smartFit();
+                    updatePreview();
+                }
+            });
+            img.onload = null;
+        };
+    }
+
+    function saveSettings() {
+        if (!cropper || activeIdx < 0) return;
+        filesData[activeIdx].settings = {
+            bw: document.getElementById('opt-bw').checked,
+            sharp: document.getElementById('opt-sharp').checked,
+            white: document.getElementById('opt-white').checked,
+            deg: cropper.getData().rotate,
+            crop: cropper.getData()
+        };
+    }
+
+    function updatePreview() {
+        if (!cropper) return;
+        const bw = document.getElementById('opt-bw').checked;
+        const sh = document.getElementById('opt-sharp').checked;
+        const wh = document.getElementById('opt-white').checked;
+        let f = "";
+        if (bw) f += "grayscale(1) ";
+        if (wh) f += "contrast(1.2) brightness(1.05) ";
+        if (sh) f += "saturate(0) contrast(1.1) ";
+        const wrap = document.querySelector('.cropper-container');
+        if (wrap) wrap.style.filter = f || "none";
+        saveSettings();
+    }
+
+    function rotateImg(deg) { 
+        if (cropper) { 
+            cropper.rotate(deg); 
+            // 重要：回転後にキャンバスとコンテナのサイズを再同期させてズームを防止
+            cropper.render(); 
+            // その後、新しい向きに合わせてフィット
+            smartFit(); 
+        } 
+    }
+
+    function smartFit() {
+        if (!cropper) return;
+        const canvasData = cropper.getCanvasData();
+        const s = document.getElementById('paper-size').value;
+        const o = document.getElementById('paper-orientation').value;
+        const targetRatio = (o === 'p') ? paperMap[s][0]/paperMap[s][1] : paperMap[s][1]/paperMap[s][0];
+        
+        const imgWidth = canvasData.width;
+        const imgHeight = canvasData.height;
+        const imgRatio = imgWidth / imgHeight;
+
+        let finalWidth, finalHeight;
+        if (imgRatio > targetRatio) {
+            finalHeight = imgHeight;
+            finalWidth = imgHeight * targetRatio;
+        } else {
+            finalWidth = imgWidth;
+            finalHeight = imgWidth / targetRatio;
+        }
+
+        cropper.setCropBoxData({
+            left: canvasData.left + (imgWidth - finalWidth) / 2,
+            top: canvasData.top + (imgHeight - finalHeight) / 2,
+            width: finalWidth,
+            height: finalHeight
+        });
+        updatePreview();
+    }
+
+    function updateRatio() { 
+        if (!cropper) return;
+        const s = document.getElementById('paper-size').value;
+        const o = document.getElementById('paper-orientation').value;
+        cropper.setAspectRatio((o === 'p') ? paperMap[s][0]/paperMap[s][1] : paperMap[s][1]/paperMap[s][0]);
+        smartFit(); 
+    }
+
+    function applyPage() {
+        if (!cropper) return;
+        saveSettings();
+        const s = document.getElementById('paper-size').value;
+        const o = document.getElementById('paper-orientation').value;
+        let [pW, pH] = (o === 'p') ? paperMap[s] : [paperMap[s][1], paperMap[s][0]];
+        const canv = cropper.getCroppedCanvas({ width: pW * 3.5 });
+        const final = document.createElement('canvas');
+        final.width = canv.width; final.height = canv.height;
+        const ctx = final.getContext('2d');
+        const set = filesData[activeIdx].settings;
+        let f = "";
+        if (set.bw) f += "grayscale(1) ";
+        if (set.white) f += "contrast(1.2) brightness(1.05) ";
+        if (set.sharp) f += "saturate(0) contrast(1.1) ";
+        ctx.filter = f || "none";
+        ctx.drawImage(canv, 0, 0);
+        filesData[activeIdx].proc = final.toDataURL('image/jpeg', 0.9);
+        renderThumbs();
+        if (activeIdx < filesData.length - 1) openEditor(activeIdx + 1);
+    }
+
+    document.getElementById('download-pdf-btn').onclick = () => {
+        const { jsPDF } = window.jspdf;
+        const s = document.getElementById('paper-size').value;
+        const o = document.getElementById('paper-orientation').value;
+        const pdf = new jsPDF(o, 'mm', s);
+        let added = 0;
+        filesData.forEach((d) => {
+            if (d.proc) {
+                if (added > 0) pdf.addPage(s, o);
+                pdf.addImage(d.proc, 'JPEG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
+                added++;
+            }
+        });
+        if (added > 0) pdf.save(`Scan_Combined_v146.pdf`);
+    };
+</script>
+</body>
+</html>
