@@ -2,53 +2,53 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>AI-Scan to PDF - Ver 1.23</title>
+    <title>AI-Scan to PDF - Ver 1.24</title>
     <script src="https://unpkg.com/tesseract.js@v4.0.1/dist/tesseract.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <style>
         :root { --primary: #2563eb; --success: #059669; --bg: #f8fafc; --text: #1e293b; --border: #e2e8f0; --sidebar-width: 260px; }
         body { font-family: sans-serif; background: var(--bg); margin: 0; display: flex; color: var(--text); min-height: 100vh; }
-
         #sidebar-container { width: var(--sidebar-width); background: white; border-right: 1px solid var(--border); position: fixed; height: 100vh; overflow-y: auto; z-index: 1000; }
         .main-content { flex: 1; margin-left: var(--sidebar-width); padding: 40px 20px; display: flex; justify-content: center; }
         .container { max-width: 900px; width: 100%; position: relative; }
         .version { position: absolute; top: 0; right: 0; font-size: 0.8rem; font-weight: bold; color: #94a3b8; padding: 2px 8px; border-radius: 4px; background: #eee; }
         
         .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid var(--border); margin-bottom: 20px; }
-        
         .drop-zone { border: 2px dashed var(--primary); padding: 50px; text-align: center; border-radius: 12px; cursor: pointer; background: #f0f7ff; transition: 0.3s; }
-        .drop-zone:hover { background: #e0f2fe; }
-
-        /* 複数プレビューエリア */
-        #preview-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; }
-        .preview-item { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: #fff; text-align: center; cursor: pointer; position: relative; }
+        
+        /* プレビューエリア */
+        #preview-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; margin-top: 20px; }
+        .preview-item { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: #fff; text-align: center; cursor: pointer; position: relative; transition: 0.2s; }
+        .preview-item:hover { transform: scale(1.02); border-color: var(--primary); }
         .preview-item img { width: 100%; height: auto; display: block; }
-        .file-name { font-size: 0.8rem; color: #64748b; padding: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .file-name { font-size: 0.75rem; color: #64748b; padding: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* 補正前後比較エリア */
+        /* 比較・調整エリア */
         .comparison-area { display: none; margin-top: 30px; padding-top: 20px; border-top: 2px solid var(--border); }
         .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px; }
-        .comparison-box { text-align: center; }
-        .comparison-box h4 { margin: 0 0 10px 0; color: #64748b; font-size: 0.9rem; }
         .img-wrap { width: 100%; aspect-ratio: 1/1.4; background: #eee; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); }
         .img-wrap img { max-width: 100%; max-height: 100%; object-fit: contain; }
 
-        .btn-action { background: var(--success); color: white; border: none; padding: 20px; border-radius: 10px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1.2rem; margin-top: 30px; display: none; transition: 0.2s; }
-        .btn-action:hover { background: #047857; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(5,150,105,0.3); }
+        .toolbar { display: flex; gap: 10px; margin-bottom: 15px; justify-content: center; }
+        .btn-tool { background: #475569; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: bold; }
+        .btn-action { background: var(--success); color: white; border: none; padding: 20px; border-radius: 10px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1.2rem; margin-top: 30px; display: none; }
         
-        #log-overlay { display: none; position: fixed; top: 0; left: var(--sidebar-width); right: 0; bottom: 0; background: rgba(0,0,0,0.7); color: white; z-index: 2000; align-items: center; justify-content: center; flex-direction: column; font-weight: bold; }
+        #log-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); color: white; z-index: 2000; align-items: center; justify-content: center; flex-direction: column; }
     </style>
 </head>
 <body>
 
 <div id="sidebar-container"></div>
-<div id="log-overlay"><div style="font-size:30px; margin-bottom:10px;">🧠</div> <span id="log-text">AIが解析中...</span></div>
+<div id="log-overlay">🧠 <span id="log-text">解析中...</span></div>
 
 <main class="main-content">
     <div class="container">
-        <div class="version">Ver 1.23</div>
-        <h1 style="margin-top: 0; font-size: 1.75rem;">🖼️ AI-Powered Auto-Scanner</h1>
+        <div class="version">Ver 1.24</div>
+        <h1 style="margin-top: 0; margin-bottom: 5px;">🖼️ AI-Powered Auto-Scanner</h1>
+        <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 25px;">
+            AIが書類の向きを自動判定し、スキャン風の補正をかけてPDF化します。向きが正しくない場合は、画像をクリックして手動で修正できます。
+        </p>
 
         <div class="card">
             <div style="display:flex; gap:15px; margin-bottom:15px;">
@@ -68,82 +68,63 @@
 
             <div class="drop-zone" id="drop-zone">
                 <div style="font-size: 40px;">📂</div>
-                <strong>複数画像をドロップして完全自動補正</strong>
-                <p style="font-size: 0.85rem; color: #64748b; margin-top: 5px;">AIが向きを自動修正し、背景をきれいに飛ばします</p>
+                <strong>画像をアップロード</strong>
                 <input type="file" id="file-input" multiple accept="image/*" style="display:none;">
             </div>
 
             <div id="preview-list"></div>
-            <button class="btn-action" id="download-pdf">すべての画像をまとめてPDF保存</button>
+            <button class="btn-action" id="download-pdf">すべての画像をPDFで保存</button>
         </div>
 
         <div id="comparison-area" class="card comparison-area">
-            <h3>🎨 補正プレビュー（選択中: <span id="current-filename"></span>）</h3>
+            <h3 style="margin-top:0;">🔧 向きの微調整</h3>
+            <div class="toolbar">
+                <button class="btn-tool" onclick="rotateCurrent(-90)">↺ 左90°回転</button>
+                <button class="btn-tool" onclick="rotateCurrent(90)">↻ 右90°回転</button>
+                <button class="btn-tool" onclick="rotateCurrent(180)">↕ 180°反転</button>
+            </div>
             <div class="comparison-grid">
-                <div class="comparison-box">
-                    <h4>補正前（元画像）</h4>
-                    <div class="img-wrap"><img id="comp-orig"></div>
-                </div>
-                <div class="comparison-box">
-                    <h4>補正後（自動回転＋スキャン）</h4>
-                    <div class="img-wrap"><img id="comp-proc"></div>
-                </div>
+                <div style="text-align:center;"><p style="font-size:0.8rem; color:#64748b;">元画像</p><div class="img-wrap"><img id="comp-orig"></div></div>
+                <div style="text-align:center;"><p style="font-size:0.8rem; color:#64748b;">PDF出力イメージ</p><div class="img-wrap"><img id="comp-proc"></div></div>
             </div>
         </div>
     </div>
 </main>
 
 <script>
-    let processedImagesData = []; // {orig: base64, proc: base64, name: string} の配列
+    let processedImagesData = [];
+    let activeIndex = -1;
     const paperMap = { a4: [210, 297], a3: [297, 420], b4: [250, 353] };
 
-    // サイドバー読込
     fetch('sidebar.html').then(res => res.text()).then(html => document.getElementById('sidebar-container').innerHTML = html);
 
     const fileInput = document.getElementById('file-input');
     const dropZone = document.getElementById('drop-zone');
-    const logOverlay = document.getElementById('log-overlay');
-    const logText = document.getElementById('log-text');
 
     dropZone.onclick = () => fileInput.click();
     fileInput.onchange = (e) => handleFiles(e.target.files);
-    dropZone.ondragover = (e) => e.preventDefault();
-    dropZone.ondrop = (e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); };
-
-    function showLog(msg) { logOverlay.style.display = 'flex'; logText.innerText = msg; }
-    function hideLog() { logOverlay.style.display = 'none'; }
 
     async function handleFiles(files) {
         if (!files.length) return;
-        showLog("⌛ 複数の画像をAIで解析中...");
+        document.getElementById('log-overlay').style.display = 'flex';
         processedImagesData = [];
         document.getElementById('preview-list').innerHTML = "";
         
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
-            const percent = Math.round((i / files.length) * 100);
-            showLog(`⌛ ${files.length}枚中 ${i+1}枚目を補正中... (${percent}%)`);
-            
             const origImg = await loadImage(file);
             
-            // 1. OCRで文字の向きを自動判定
             const worker = await Tesseract.createWorker();
             await worker.loadLanguage('jpn+eng');
             await worker.initialize('jpn+eng');
             const { data } = await worker.detect(origImg);
             await worker.terminate();
-            const deg = data.orientation_degrees || 0;
 
-            // 2. 回転＆スキャン風補正
-            const sizeKey = document.getElementById('paper-size').value;
-            const orient = document.getElementById('paper-orientation').value;
-            const processedBase64 = await processAutoScan(origImg, deg, sizeKey, orient);
-            
-            processedImagesData.push({ orig: origImg.src, proc: processedBase64, name: file.name });
-            addPreview(processedBase64, i, file.name);
+            const res = await processScan(origImg, data.orientation_degrees || 0);
+            processedImagesData.push({ orig: origImg, currentDeg: data.orientation_degrees || 0, proc: res, name: file.name });
+            addPreview(res, i, file.name);
         }
-        
-        hideLog();
+        document.getElementById('log-overlay').style.display = 'none';
         document.getElementById('download-pdf').style.display = 'block';
     }
 
@@ -155,83 +136,65 @@
         });
     }
 
-    async function processAutoScan(img, deg, sizeKey, orient) {
+    async function processScan(img, deg) {
+        const sizeKey = document.getElementById('paper-size').value;
+        const orient = document.getElementById('paper-orientation').value;
         let [pW, pH] = paperMap[sizeKey];
         if (orient === 'l') [pW, pH] = [pH, pW];
 
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        const scale = 3.5; // 高解像度 (300dpi相当)
-        canvas.width = pW * scale;
-        canvas.height = pH * scale;
-
-        // 背景をクリアな白に
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        const scale = 3.5;
+        canvas.width = pW * scale; canvas.height = pH * scale;
+        ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.save();
         ctx.translate(canvas.width / 2, canvas.height / 2);
-        
-        // AIが判定した向きに自動回転 (degrees分だけ「逆転」させる)
         ctx.rotate((-deg * Math.PI) / 180);
 
-        let imgW = img.width;
-        let imgH = img.height;
+        let imgW = img.width, imgH = img.height;
         if (deg % 180 !== 0) [imgW, imgH] = [imgH, imgW];
-
-        // フィットロジック (余白なしで用紙全面に Cover 配置)
         const ratio = Math.max(canvas.width / imgW, canvas.height / imgH);
-        
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        
-        // 【修正】白けるのを防ぐマイルドなフィルター（文字の濃さを維持）
-        // グレースケール化 -> コントラスト弱め -> 明るさ微増
         ctx.filter = 'grayscale(1) contrast(1.2) brightness(1.05)';
-        
         ctx.drawImage(img, -img.width * ratio / 2, -img.height * ratio / 2, img.width * ratio, img.height * ratio);
         ctx.restore();
-
         return canvas.toDataURL('image/jpeg', 0.85);
     }
 
     function addPreview(base64, index, filename) {
-        const list = document.getElementById('preview-list');
         const item = document.createElement('div');
         item.className = 'preview-item';
-        item.innerHTML = `<img src="${base64}"><div class="file-name">${filename}</div>`;
-        item.onclick = () => showComparison(index);
-        list.appendChild(item);
+        item.innerHTML = `<img id="p-img-${index}" src="${base64}"><div class="file-name">${filename}</div>`;
+        item.onclick = () => {
+            activeIndex = index;
+            document.getElementById('comp-orig').src = processedImagesData[index].orig.src;
+            document.getElementById('comp-proc').src = processedImagesData[index].proc;
+            document.getElementById('comparison-area').style.display = 'block';
+        };
+        document.getElementById('preview-list').appendChild(item);
     }
 
-    function showComparison(index) {
-        const data = processedImagesData[index];
-        document.getElementById('current-filename').innerText = data.name;
-        document.getElementById('comp-orig').src = data.orig;
-        document.getElementById('comp-proc').src = data.proc;
-        document.getElementById('comparison-area').style.display = 'block';
+    async function rotateCurrent(addDeg) {
+        if (activeIndex < 0) return;
+        const data = processedImagesData[activeIndex];
+        data.currentDeg = (data.currentDeg + addDeg) % 360;
+        const newRes = await processScan(data.orig, data.currentDeg);
+        data.proc = newRes;
+        document.getElementById('comp-proc').src = newRes;
+        document.getElementById(`p-img-${activeIndex}`).src = newRes;
     }
-
-    document.getElementById('paper-size').onchange = () => { if(processedImagesData.length > 0) handleFiles(document.getElementById('file-input').files); };
-    document.getElementById('paper-orientation').onchange = () => { if(processedImagesData.length > 0) handleFiles(document.getElementById('file-input').files); };
 
     document.getElementById('download-pdf').onclick = () => {
         const { jsPDF } = window.jspdf;
         const sizeKey = document.getElementById('paper-size').value;
         const orient = document.getElementById('paper-orientation').value;
-        const [w, h] = paperMap[sizeKey];
         const pdf = new jsPDF(orient, 'mm', sizeKey);
-
         processedImagesData.forEach((data, i) => {
             if (i > 0) pdf.addPage(sizeKey, orient);
-            const pW = pdf.internal.pageSize.getWidth();
-            const pH = pdf.internal.pageSize.getHeight();
-            pdf.addImage(data.proc, 'JPEG', 0, 0, pW, pH);
+            pdf.addImage(data.proc, 'JPEG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
         });
-
-        pdf.save("AI_Scanned_B4_Combined.pdf");
+        pdf.save("AI_Scanned_Combined.pdf");
     };
 </script>
-
 </body>
 </html>
