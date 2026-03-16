@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Smart PDF Scanner - Ver 1.33</title>
+    <title>Smart PDF Scanner - Ver 1.34</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
@@ -50,22 +50,22 @@
 
 <main class="main-content">
     <div class="container">
-        <div class="version">Ver 1.33</div>
+        <div class="version">Ver 1.34</div>
         <h1 style="margin-top: 0; font-size: 1.8rem; color: #0f172a;">📑 Smart PDF Scanner</h1>
         <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 25px;">
-            画像をドロップし、台形補正とスキャナー補正を設定します。「用紙方向を同期」ボタンを押すと、画像の向きに合わせて用紙を切り替え、書類範囲を自動で最適化します。
+            各画像の設定（向き、補正、範囲）は個別に保存されます。同期ボタンを押すと、選択中の用紙比率に合わせて書類範囲を自動でフィットさせます。
         </p>
 
         <div class="card">
             <div class="config-group">
                 <div class="config-item">
-                    <label>出力用紙サイズ</label>
+                    <label>共通：出力用紙サイズ</label>
                     <select id="paper-size" onchange="updateCropRatio()">
-                        <option value="a4">A4 (210x297mm)</option><option value="a3">A3 (297x420mm)</option><option value="b4" selected>B4 (250x353mm)</option>
+                        <option value="a4">A4</option><option value="a3">A3</option><option value="b4" selected>B4</option>
                     </select>
                 </div>
                 <div class="config-item">
-                    <label>用紙の向き</label>
+                    <label>共通：用紙の向き</label>
                     <select id="paper-orientation" onchange="updateCropRatio()">
                         <option value="p">縦向き (Portrait)</option><option value="l" selected>横向き (Landscape)</option>
                     </select>
@@ -84,16 +84,17 @@
                 <div class="correction-panel">
                     <div class="controls-flex">
                         <div class="tool-group">
-                            <button class="btn-tool" onclick="rotateOnly(-90)">↺ 左90°</button>
-                            <button class="btn-tool" onclick="rotateOnly(90)">↻ 右90°</button>
-                            <button class="btn-tool btn-sync" onclick="syncAndSmartFit()" title="用紙向きを同期し書類にフィット">用紙方向を同期</button>
+                            <button class="btn-tool" onclick="rotateImage(-90)">↺ 左90°</button>
+                            <button class="btn-tool" onclick="rotateImage(90)">↻ 右90°</button>
+                            <button class="btn-tool btn-sync" onclick="smartFitToPaper()" title="用紙比率に合わせて自動フィット">書類にフィット</button>
                         </div>
                         <div class="correction-list">
-                            <label class="check-item"><input type="checkbox" id="opt-bw" checked> 白黒補正</label>
-                            <label class="check-item"><input type="checkbox" id="opt-sharp"> シャープ</label>
-                            <label class="check-item"><input type="checkbox" id="opt-white" checked> 背景白飛</label>
+                            <label class="check-item"><input type="checkbox" id="opt-trap" checked onchange="toggleCropper()"> 台形補正</label>
+                            <label class="check-item"><input type="checkbox" id="opt-bw" checked onchange="saveCurrentSettings()"> 白黒補正</label>
+                            <label class="check-item"><input type="checkbox" id="opt-sharp" onchange="saveCurrentSettings()"> シャープ</label>
+                            <label class="check-item"><input type="checkbox" id="opt-white" checked onchange="saveCurrentSettings()"> 背景白飛</label>
                         </div>
-                        <button class="btn-confirm" onclick="applyAndNext()">ページ確定</button>
+                        <button class="btn-confirm" onclick="applyAndNext()">確定</button>
                     </div>
                 </div>
             </div>
@@ -119,7 +120,10 @@
                 r.onload = e => { const i = new Image(); i.onload = () => res(i); i.src = e.target.result; };
                 r.readAsDataURL(file);
             });
-            filesData.push({ orig: img, name: file.name, proc: null });
+            filesData.push({ 
+                orig: img, name: file.name, proc: null, 
+                settings: { trap:true, bw:true, sharp:false, white:true, deg:0, crop:null } 
+            });
         }
         document.getElementById('workspace').style.display = 'grid';
         renderThumbnails(); openEditor(filesData.length - files.length);
@@ -131,7 +135,8 @@
             const item = document.createElement('div');
             item.className = `thumb-item ${i === activeIdx ? 'active' : ''}`;
             item.innerHTML = `<img src="${data.orig.src}">${data.proc ? '<div class="thumb-status">✓</div>' : ''}`;
-            item.onclick = () => openEditor(i); list.appendChild(item);
+            item.onclick = () => { saveCurrentSettings(); openEditor(i); }; 
+            list.appendChild(item);
         });
         document.getElementById('download-pdf').style.display = filesData.some(d => d.proc) ? 'block' : 'none';
     }
@@ -142,51 +147,64 @@
         const img = document.getElementById('stage-image');
         img.src = data.orig.src;
 
+        // 保存された設定をUIに戻す
+        document.getElementById('opt-trap').checked = data.settings.trap;
+        document.getElementById('opt-bw').checked = data.settings.bw;
+        document.getElementById('opt-sharp').checked = data.settings.sharp;
+        document.getElementById('opt-white').checked = data.settings.white;
+
         img.onload = () => {
-            initCropper(img);
+            const sizeKey = document.getElementById('paper-size').value;
+            const orient = document.getElementById('paper-orientation').value;
+            const ratio = (orient === 'p') ? paperMap[sizeKey][0]/paperMap[sizeKey][1] : paperMap[sizeKey][1]/paperMap[sizeKey][0];
+            
+            cropper = new Cropper(img, { 
+                aspectRatio: ratio, viewMode: 1, background: false,
+                data: data.settings.crop, // 保存された範囲を復元
+                ready() {
+                    cropper.rotate(data.settings.deg); // 保存された回転を復元
+                    if (!data.settings.trap) cropper.disable();
+                }
+            });
             img.onload = null;
         };
         document.querySelectorAll('.thumb-item').forEach((it, i) => it.classList.toggle('active', i === idx));
     }
 
-    function initCropper(img) {
-        const sizeKey = document.getElementById('paper-size').value;
-        const orient = document.getElementById('paper-orientation').value;
-        const ratio = (orient === 'p') ? paperMap[sizeKey][0]/paperMap[sizeKey][1] : paperMap[sizeKey][1]/paperMap[sizeKey][0];
-        cropper = new Cropper(img, { 
-            aspectRatio: ratio, 
-            viewMode: 1, 
-            autoCropArea: 0.9, 
-            background: false,
-            responsive: true
-        });
+    function saveCurrentSettings() {
+        if (!cropper || activeIdx < 0) return;
+        filesData[activeIdx].settings = {
+            trap: document.getElementById('opt-trap').checked,
+            bw: document.getElementById('opt-bw').checked,
+            sharp: document.getElementById('opt-sharp').checked,
+            white: document.getElementById('opt-white').checked,
+            deg: cropper.getData().rotate,
+            crop: cropper.getData()
+        };
     }
 
-    function rotateOnly(deg) { if (cropper) cropper.rotate(deg); }
+    function rotateImage(deg) { if (cropper) cropper.rotate(deg); saveCurrentSettings(); }
 
-    // ★今回の主要改善：同期＋スマートフィット
-    function syncAndSmartFit() {
+    function toggleCropper() {
+        const isTrap = document.getElementById('opt-trap').checked;
+        if (isTrap) cropper.enable(); else cropper.disable();
+        saveCurrentSettings();
+    }
+
+    // ★改善：用紙の向きを変えず、比率に画像をフィットさせる
+    function smartFitToPaper() {
         if (!cropper) return;
-        
-        // 1. 用紙向きの切り替え
-        const orientSelect = document.getElementById('paper-orientation');
-        orientSelect.value = (orientSelect.value === 'p') ? 'l' : 'p';
-        
-        // 2. 比率の更新
-        const sizeKey = document.getElementById('paper-size').value;
-        const orient = orientSelect.value;
-        const ratio = (orient === 'p') ? paperMap[sizeKey][0]/paperMap[sizeKey][1] : paperMap[sizeKey][1]/paperMap[sizeKey][0];
-        cropper.setAspectRatio(ratio);
-
-        // 3. スマートフィット実行（画像を認識して書類サイズに枠を合わせる）
-        // ここでは、現在の回転後の画像に対して最大の矩形を比率を保って配置するロジックを適用
         const canvasData = cropper.getCanvasData();
+        const containerData = cropper.getContainerData();
+        
+        // 画面中央に最大サイズで配置
         cropper.setCropBoxData({
-            left: canvasData.left + (canvasData.width * 0.05),
-            top: canvasData.top + (canvasData.height * 0.05),
-            width: canvasData.width * 0.9,
-            height: canvasData.height * 0.9
+            left: canvasData.left + (canvasData.width * 0.1),
+            top: canvasData.top + (canvasData.height * 0.1),
+            width: canvasData.width * 0.8,
+            height: canvasData.height * 0.8
         });
+        saveCurrentSettings();
     }
 
     function updateCropRatio() {
@@ -195,10 +213,12 @@
         const orient = document.getElementById('paper-orientation').value;
         const ratio = (orient === 'p') ? paperMap[sizeKey][0]/paperMap[sizeKey][1] : paperMap[sizeKey][1]/paperMap[sizeKey][0];
         cropper.setAspectRatio(ratio);
+        saveCurrentSettings();
     }
 
     async function applyAndNext() {
         if (!cropper) return;
+        saveCurrentSettings();
         const sizeKey = document.getElementById('paper-size').value;
         const orient = document.getElementById('paper-orientation').value;
         let [pW, pH] = (orient === 'p') ? paperMap[sizeKey] : [paperMap[sizeKey][1], paperMap[sizeKey][0]];
@@ -208,10 +228,11 @@
         finalCanvas.width = croppedCanvas.width; finalCanvas.height = croppedCanvas.height;
         const ctx = finalCanvas.getContext('2d');
 
+        const s = filesData[activeIdx].settings;
         let filters = [];
-        if (document.getElementById('opt-bw').checked) filters.push('grayscale(1)');
-        if (document.getElementById('opt-white').checked) filters.push('contrast(1.2) brightness(1.05)');
-        if (document.getElementById('opt-sharp').checked) filters.push('saturate(0) contrast(1.1)');
+        if (s.bw) filters.push('grayscale(1)');
+        if (s.white) filters.push('contrast(1.2) brightness(1.05)');
+        if (s.sharp) filters.push('saturate(0) contrast(1.1)');
         ctx.filter = filters.length ? filters.join(' ') : 'none';
         ctx.drawImage(croppedCanvas, 0, 0);
 
@@ -233,7 +254,7 @@
                 added++;
             }
         });
-        pdf.save(`Scan_Combined_Ver1.33.pdf`);
+        pdf.save(`Scan_Combined_Ver1.34.pdf`);
     };
 </script>
 </body>
