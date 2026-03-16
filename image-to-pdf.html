@@ -2,78 +2,99 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Smart PDF Scanner - Ver 1.51</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart PDF Scanner - Ver 1.52</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     
     <style>
-        :root { --primary: #2563eb; --success: #059669; --danger: #dc2626; --warning: #fff7ed; --bg: #f1f5f9; --text: #1e293b; --border: #cbd5e1; --sidebar-width: 200px; }
+        :root { --primary: #2563eb; --success: #059669; --danger: #dc2626; --warning: #fff7ed; --bg: #f1f5f9; --text: #1e293b; --border: #cbd5e1; }
         body { font-family: sans-serif; background: var(--bg); margin: 0; display: flex; color: var(--text); height: 100vh; overflow: hidden; }
-        #sidebar-container { width: 260px; background: white; border-right: 1px solid #e2e8f0; position: fixed; height: 100vh; overflow-y: auto; z-index: 1000; }
         
-        .main-content { flex: 1; margin-left: 260px; padding: 10px 20px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; }
-        .container { max-width: 1600px; width: 100%; position: relative; display: flex; flex-direction: column; height: 100%; }
-        .version { position: absolute; top: -5px; right: 0; font-size: 0.7rem; font-weight: bold; color: #94a3b8; padding: 2px 8px; border-radius: 4px; background: #eee; }
+        /* メイン構成 */
+        .main-content { flex: 1; padding: 10px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; overflow-y: auto; }
+        .container { max-width: 1200px; width: 100%; margin: 0 auto; position: relative; display: flex; flex-direction: column; min-height: 100%; }
+        .version { position: absolute; top: 0; right: 0; font-size: 0.7rem; font-weight: bold; color: #94a3b8; padding: 2px 8px; border-radius: 4px; background: #eee; }
         
         h1 { font-size: 1.2rem; margin: 0 0 5px 0; }
         
-        /* ガイド・目安セクション */
-        .guide-box { background: #eff6ff; border-left: 4px solid var(--primary); padding: 8px 12px; margin-bottom: 8px; border-radius: 4px; }
+        /* 説明文・ガイドセクション */
+        .guide-box { background: #eff6ff; border-left: 4px solid var(--primary); padding: 10px; margin-bottom: 8px; border-radius: 4px; }
         .guide-box h2 { font-size: 0.8rem; margin: 0 0 4px 0; color: var(--primary); }
-        .guide-box p { font-size: 0.75rem; margin: 0; line-height: 1.4; }
+        .guide-box p { font-size: 0.75rem; margin: 0 0 4px 0; line-height: 1.4; }
         
-        .limit-box { background: var(--warning); border: 1px solid #ffedd5; padding: 8px 12px; margin-bottom: 10px; border-radius: 8px; display: flex; align-items: center; gap: 8px; }
+        .limit-box { background: var(--warning); border: 1px solid #ffedd5; padding: 8px 12px; margin-bottom: 10px; border-radius: 8px; }
         .limit-box span { font-size: 0.75rem; color: #9a3412; }
 
-        .top-nav { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 10px; margin-bottom: 8px; align-items: end; }
+        /* ナビゲーション */
+        .top-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 10px; }
         .card-mini { background: white; padding: 6px 10px; border-radius: 6px; border: 1px solid #e2e8f0; }
-        select { width: 100%; padding: 4px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 0.8rem; background: #fff; }
-        label { font-size: 0.65rem; font-weight: bold; color: #64748b; display: block; margin-bottom: 1px; }
+        select { width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 0.85rem; }
+        label { font-size: 0.65rem; font-weight: bold; color: #64748b; display: block; margin-bottom: 2px; }
 
-        .workspace { display: grid; grid-template-columns: var(--sidebar-width) 1fr; gap: 15px; flex: 1; min-height: 0; display: none; margin-bottom: 10px; }
+        /* ワークスペース：PCでは横並び、スマホでは縦並び */
+        .workspace { display: grid; grid-template-columns: 180px 1fr; gap: 15px; flex: 1; min-height: 0; display: none; margin-bottom: 10px; }
         
+        /* サムネイルリスト：スマホ時は横スクロール */
         .file-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; background: #e5eaf0; padding: 10px; border-radius: 8px; border: 1px solid var(--border); }
-        .thumb-item { border: 3px solid #cbd5e1; border-radius: 6px; cursor: pointer; background: #fff; position: relative; padding: 2px; flex-shrink: 0; }
+        .thumb-item { border: 3px solid #cbd5e1; border-radius: 6px; cursor: pointer; background: #fff; position: relative; padding: 2px; flex-shrink: 0; width: 100%; box-sizing: border-box; }
         .thumb-item.active { border-color: var(--primary); box-shadow: 0 2px 8px rgba(37,99,235,0.2); }
         .thumb-item img { width: 100%; aspect-ratio: 1.4/1; object-fit: contain; background: #eee; display: block; border-radius: 3px; }
         .thumb-info { font-size: 0.7rem; text-align: center; color: #475569; margin-top: 3px; font-weight: bold; }
         .thumb-status { position: absolute; top: -6px; right: -6px; background: var(--success); color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
 
-        .editor-main { background: white; border-radius: 8px; border: 1px solid var(--border); padding: 10px; display: flex; flex-direction: column; min-height: 0; }
-        .stage-wrap { flex: 1; background: #0f172a; border-radius: 6px; overflow: hidden; margin-bottom: 8px; position: relative; display: flex; align-items: center; justify-content: center; }
+        /* 編集エリア */
+        .editor-main { background: white; border-radius: 8px; border: 1px solid var(--border); padding: 10px; display: flex; flex-direction: column; min-height: 350px; }
+        .stage-wrap { flex: 1; background: #0f172a; border-radius: 6px; overflow: hidden; margin-bottom: 8px; position: relative; display: flex; align-items: center; justify-content: center; min-height: 250px; }
         #stage-image { display: block; max-width: 100%; }
 
-        .correction-panel { background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; }
-        .controls-flex { display: flex; justify-content: space-between; align-items: center; }
+        /* 操作パネル */
+        .correction-panel { background: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; }
+        .controls-flex { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
         .tool-group { display: flex; gap: 6px; }
-        .btn-tool { background: #475569; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
-        .btn-reset { background: var(--danger); }
-        .btn-confirm { background: var(--primary); color: white; border: none; padding: 8px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
-        .btn-pdf { background: var(--success); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1rem; display: none; margin-top: 5px; }
+        .btn-tool { background: #475569; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
+        .btn-reset { background: var(--danger); width: 100%; margin-bottom: 10px; }
+        .btn-confirm { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-pdf { background: var(--success); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1rem; display: none; margin-top: 10px; }
 
         /* 免責事項 */
-        .disclaimer { font-size: 10px; color: #94a3b8; text-align: center; padding: 8px 0; line-height: 1.5; border-top: 1px solid #e2e8f0; background: #fff; flex-shrink: 0; }
+        .disclaimer { font-size: 10px; color: #94a3b8; text-align: center; padding: 15px 0; line-height: 1.5; border-top: 1px solid #e2e8f0; background: #fff; flex-shrink: 0; }
+
+        /* ★ レスポンシブ調整（スマホ用） */
+        @media (max-width: 768px) {
+            body { overflow-y: auto; height: auto; }
+            .main-content { height: auto; overflow: visible; }
+            .workspace { grid-template-columns: 1fr; display: flex; flex-direction: column; }
+            .file-list { flex-direction: row; overflow-x: auto; overflow-y: hidden; height: 100px; padding: 5px; }
+            .thumb-item { width: 110px; }
+            .stage-wrap { height: 50vh; min-height: 300px; }
+            .controls-flex { flex-direction: column; align-items: stretch; }
+            .tool-group { justify-content: center; }
+            .correction-list { justify-content: center; margin: 5px 0; }
+        }
     </style>
 </head>
 <body>
 
-<div id="sidebar-container"></div>
-
 <main class="main-content">
     <div class="container">
-        <div class="version">Ver 1.51</div>
+        <div class="version">Ver 1.52</div>
         <h1>📑 Smart PDF Scanner</h1>
 
         <div class="guide-box">
+            <h2>【このツールについて】</h2>
+            <p>・このツールは主に複数の画像ファイルをPDFにするためを想定したツールです。</p>
             <h2>【使い方の手順】</h2>
-            <p>1. 画像をドロップして読み込み → 2. 左のリストから画像を選択し「範囲」と「補正」を調整 → 3. ページごとに「ページ確定」をクリック → 4. 最後に「PDF保存」をクリック</p>
+            <p>1. 画像をドロップして読み込み → 2. 画像を選択し「範囲」と「補正」を調整 → 3. ページごとに「ページ確定」をクリック → 4. 最後に「PDF保存」をクリック</p>
         </div>
 
         <div class="limit-box">
-            <span>💡 <strong>ご利用の目安:</strong> 推奨サイズは200MB程度です。大容量ファイルも処理可能ですが、お使いのデバイスのメモリ状況により時間がかかる場合があります。</span>
+            <span>💡 <strong>ご利用の目安:</strong> 推奨サイズは200MB程度です。お使いのデバイスのメモリ状況により時間がかかる場合があります。</span>
         </div>
         
+        <button class="btn-tool btn-reset" onclick="resetAll()">全てのデータを初期化して読み直す</button>
+
         <div class="top-nav">
             <div class="card-mini">
                 <label>用紙サイズ</label>
@@ -83,11 +104,8 @@
                 <label>出力向き</label>
                 <select id="paper-orientation" onchange="updateRatio()"><option value="p">縦</option><option value="l" selected>横</option></select>
             </div>
-            <div style="display:flex; gap:10px;">
-                <button class="btn-tool btn-reset" style="flex:1" onclick="resetAll()">全リセット</button>
-                <div id="drop-zone" class="card-mini" style="flex:2.5; border: 2px dashed var(--primary); background: #f0f9ff; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                    <span style="font-size: 0.75rem; font-weight: bold; color: var(--primary);">📥 追加ドロップ</span>
-                </div>
+            <div id="drop-zone" class="card-mini" style="border: 2px dashed var(--primary); background: #f0f9ff; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                <span style="font-size: 0.8rem; font-weight: bold; color: var(--primary);">📥 画像を追加ドロップ</span>
             </div>
             <input type="file" id="file-input" multiple accept="image/*" style="display:none;">
         </div>
@@ -103,7 +121,7 @@
                             <button class="btn-tool" onclick="rotateImg(90)">↻ 右回転</button>
                             <button class="btn-tool" style="background:#0ea5e9" onclick="smartFit()">書類にフィット</button>
                         </div>
-                        <div class="correction-list" style="display:flex; gap:12px;">
+                        <div class="correction-list" style="display:flex; gap:10px;">
                             <label class="check-item"><input type="checkbox" id="opt-bw" checked onchange="updatePreview()"> 白黒</label>
                             <label class="check-item"><input type="checkbox" id="opt-sharp" onchange="updatePreview()"> 鮮明</label>
                             <label class="check-item"><input type="checkbox" id="opt-white" checked onchange="updatePreview()"> 背景白</label>
@@ -117,8 +135,7 @@
 
         <div class="disclaimer">
             【免責事項・ご注意】<br>
-            ・本ツールは個人開発のWebアプリです。処理はすべてブラウザ内で完結し、外部へファイルが送られることはありません。<br>
-            ・暗号化やパスワード保護が施されたPDFは解析できずエラーになる場合があります。<br>
+            ・本ツールは個人開発のWebアプリです。処理はブラウザ内で完結し、外部へ送られることはありません。<br>
             ・本ツールの使用によるデータの損失等について、製作者は一切の責任を負いかねます。
         </div>
     </div>
@@ -127,8 +144,6 @@
 <script>
     let filesData = []; let activeIdx = -1; let cropper = null;
     const paperMap = { a4: [210, 297], a3: [297, 420], b4: [250, 353] };
-
-    fetch('sidebar.html').then(res => res.text()).then(html => document.getElementById('sidebar-container').innerHTML = html);
 
     document.getElementById('drop-zone').onclick = () => document.getElementById('file-input').click();
     document.getElementById('file-input').onchange = (e) => handleFiles(e.target.files);
@@ -144,7 +159,7 @@
             });
             filesData.push({ orig: img, proc: null, settings: { bw:true, sharp:false, white:true, deg:0, crop:null } });
         }
-        document.getElementById('workspace').style.display = 'grid';
+        document.getElementById('workspace').style.display = (window.innerWidth > 768) ? 'grid' : 'flex';
         renderThumbs(); openEditor(currentCount); 
     }
 
@@ -171,10 +186,9 @@
         const btn = document.getElementById('download-pdf-btn');
         btn.innerText = `✓の全ページ (${count}枚) をPDF保存`;
         btn.style.display = count > 0 ? 'block' : 'none';
-        
         if (activeIdx >= 0) {
             const el = document.getElementById(`thumb-${activeIdx}`);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
     }
 
@@ -277,7 +291,7 @@
         const pdf = new jsPDF(o, 'mm', s);
         let added = 0;
         filesData.forEach((d) => { if (d.proc) { if (added > 0) pdf.addPage(s, o); pdf.addImage(d.proc, 'JPEG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight()); added++; } });
-        if (added > 0) pdf.save(`Scan_Combined_v1.51.pdf`);
+        if (added > 0) pdf.save(`Scan_Combined_v1.52.pdf`);
     };
 </script>
 </body>
