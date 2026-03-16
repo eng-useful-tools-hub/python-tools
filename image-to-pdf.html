@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Smart PDF Scanner - Ver 1.48</title>
+    <title>Smart PDF Scanner - Ver 1.49</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
@@ -13,31 +13,30 @@
         #sidebar-container { width: var(--sidebar-width); background: white; border-right: 1px solid #e2e8f0; position: fixed; height: 100vh; overflow-y: auto; z-index: 1000; }
         
         .main-content { flex: 1; margin-left: var(--sidebar-width); padding: 10px 20px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; }
-        .container { max-width: 1500px; width: 100%; position: relative; display: flex; flex-direction: column; height: 100%; }
+        .container { max-width: 1600px; width: 100%; position: relative; display: flex; flex-direction: column; height: 100%; }
         .version { position: absolute; top: -5px; right: 0; font-size: 0.7rem; font-weight: bold; color: #94a3b8; padding: 2px 8px; border-radius: 4px; background: #eee; }
         
         h1 { font-size: 1.2rem; margin: 0 0 5px 0; }
         .desc { color: #64748b; font-size: 0.75rem; margin-bottom: 5px; }
 
         .top-nav { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 10px; margin-bottom: 8px; align-items: end; }
-        .card-mini { background: white; padding: 6px 10px; border-radius: 6px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .card-mini { background: white; padding: 6px 10px; border-radius: 6px; border: 1px solid #e2e8f0; }
         select { width: 100%; padding: 4px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 0.8rem; background: #fff; }
         label { font-size: 0.65rem; font-weight: bold; color: #64748b; display: block; margin-bottom: 1px; }
 
-        /* ワークスペース：左サイドバー形式に変更 */
-        .workspace { display: grid; grid-template-columns: 220px 1fr; gap: 15px; flex: 1; min-height: 0; display: none; margin-bottom: 5px; }
+        /* ワークスペース：左側のサムネイル列を広く(300px)確保 */
+        .workspace { display: grid; grid-template-columns: 300px 1fr; gap: 15px; flex: 1; min-height: 0; display: none; margin-bottom: 10px; }
         
-        /* サムネイルリスト：1列・2倍サイズ・独立スクロール */
+        /* サムネイルリスト：1列・大型・独立スクロール */
         .file-list { 
             display: flex; 
             flex-direction: column; 
-            gap: 12px; 
+            gap: 15px; 
             overflow-y: auto; 
             background: #e5eaf0; 
-            padding: 12px; 
+            padding: 15px; 
             border-radius: 8px; 
             border: 1px solid var(--border);
-            scrollbar-width: thin;
         }
         .thumb-item { 
             border: 3px solid #cbd5e1; 
@@ -45,36 +44,46 @@
             cursor: pointer; 
             background: #fff; 
             position: relative; 
-            padding: 3px; 
-            flex-shrink: 0; /* サイズ縮小を防止 */
+            padding: 4px; 
+            flex-shrink: 0;
             transition: all 0.2s ease;
         }
         .thumb-item.active { 
             border-color: var(--primary); 
             background: #fff; 
-            box-shadow: 0 4px 12px rgba(37,99,235,0.2);
-            transform: scale(1.02);
+            box-shadow: 0 4px 15px rgba(37,99,235,0.3);
+            transform: scale(1.01);
         }
         .thumb-item img { width: 100%; aspect-ratio: 1.4/1; object-fit: contain; background: #eee; display: block; border-radius: 4px; }
-        .thumb-info { font-size: 0.7rem; text-align: center; color: #475569; margin-top: 4px; font-weight: bold; }
-        .thumb-status { position: absolute; top: -8px; right: -8px; background: var(--success); color: white; border-radius: 50%; width: 24px; height: 24px; font-size: 14px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .thumb-info { font-size: 0.75rem; text-align: center; color: #475569; margin-top: 5px; font-weight: bold; }
+        .thumb-status { position: absolute; top: -10px; right: -10px; background: var(--success); color: white; border-radius: 50%; width: 28px; height: 28px; font-size: 16px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
         .editor-main { background: white; border-radius: 8px; border: 1px solid var(--border); padding: 10px; display: flex; flex-direction: column; min-height: 0; }
-        
         .stage-wrap { flex: 1; background: #0f172a; border-radius: 6px; overflow: hidden; margin-bottom: 8px; position: relative; display: flex; align-items: center; justify-content: center; }
         #stage-image { display: block; max-width: 100%; }
 
-        .correction-panel { background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; }
+        .correction-panel { background: #f8fafc; padding: 10px 15px; border-radius: 6px; border: 1px solid #cbd5e1; }
         .controls-flex { display: flex; justify-content: space-between; align-items: center; }
-        .tool-group { display: flex; gap: 6px; }
-        .btn-tool { background: #475569; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
+        .tool-group { display: flex; gap: 8px; }
+        .btn-tool { background: #475569; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
         .btn-reset { background: var(--danger); }
         
-        .correction-list { display: flex; gap: 12px; }
-        .check-item { display: flex; align-items: center; gap: 4px; font-size: 0.8rem; font-weight: bold; cursor: pointer; color: #475569; }
-        .btn-confirm { background: var(--primary); color: white; border: none; padding: 8px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
+        .correction-list { display: flex; gap: 15px; }
+        .check-item { display: flex; align-items: center; gap: 5px; font-size: 0.85rem; font-weight: bold; cursor: pointer; color: #475569; }
+        .btn-confirm { background: var(--primary); color: white; border: none; padding: 10px 25px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.95rem; }
         
-        .btn-pdf { background: var(--success); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1rem; display: none; margin-top: 5px; }
+        .btn-pdf { background: var(--success); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1.1rem; display: none; margin-bottom: 10px; }
+
+        /* 免責事項エリア */
+        .disclaimer { 
+            font-size: 10px; 
+            color: #94a3b8; 
+            text-align: center; 
+            padding: 10px 0; 
+            line-height: 1.5; 
+            border-top: 1px solid #e2e8f0;
+            background: #fff;
+        }
     </style>
 </head>
 <body>
@@ -83,9 +92,9 @@
 
 <main class="main-content">
     <div class="container">
-        <div class="version">Ver 1.48</div>
+        <div class="version">Ver 1.49</div>
         <h1>📑 Smart PDF Scanner</h1>
-        <p class="desc">画像を回転・フィット後に「ページ確定」してください。サムネイルを拡大し一覧性を向上させました。</p>
+        <p class="desc">左側のサムネイルから画像を選択し、個別に調整してください。確定したページがPDFに保存されます。</p>
         
         <div class="top-nav">
             <div class="card-mini">
@@ -96,10 +105,10 @@
                 <label>出力向き</label>
                 <select id="paper-orientation" onchange="updateRatio()"><option value="p">縦</option><option value="l" selected>横</option></select>
             </div>
-            <div style="display:flex; gap:8px;">
+            <div style="display:flex; gap:10px;">
                 <button class="btn-tool btn-reset" style="flex:1" onclick="resetAll()">全リセット</button>
-                <div id="drop-zone" class="card-mini" style="flex:2.5; border: 2px dashed var(--primary); background: #f0f9ff; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                    <span style="font-size: 0.75rem; font-weight: bold; color: var(--primary);">📥 追加ドロップ</span>
+                <div id="drop-zone" class="card-mini" style="flex:2; border: 2px dashed var(--primary); background: #f0f9ff; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 0.8rem; font-weight: bold; color: var(--primary);">📥 追加ドロップ</span>
                 </div>
             </div>
             <input type="file" id="file-input" multiple accept="image/*" style="display:none;">
@@ -107,12 +116,8 @@
 
         <div class="workspace" id="workspace">
             <div class="file-list" id="thumb-list"></div>
-            
             <div class="editor-main">
-                <div class="stage-wrap">
-                    <img id="stage-image">
-                </div>
-
+                <div class="stage-wrap"><img id="stage-image"></div>
                 <div class="correction-panel">
                     <div class="controls-flex">
                         <div class="tool-group">
@@ -131,6 +136,13 @@
             </div>
         </div>
         <button class="btn-pdf" id="download-pdf-btn">✓の全ページをPDF保存</button>
+
+        <div class="disclaimer">
+            【免責事項・ご注意】<br>
+            ・本ツールは個人開発のWebアプリです。処理はすべてブラウザ内で完結し、外部へファイルが送られることはありません。<br>
+            ・暗号化やパスワード保護が施されたPDFは解析できずエラーになる場合があります。<br>
+            ・本ツールの使用によるデータの損失等について、製作者は一切の責任を負いかねます。
+        </div>
     </div>
 </main>
 
@@ -182,7 +194,6 @@
         btn.innerText = `✓の全ページ (${count}枚) をPDF保存`;
         btn.style.display = count > 0 ? 'block' : 'none';
         
-        // アクティブ項目へ自動スクロール
         if (activeIdx >= 0) {
             const el = document.getElementById(`thumb-${activeIdx}`);
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -242,8 +253,7 @@
 
     function rotateImg(deg) { 
         if (cropper) { 
-            cropper.rotate(deg); 
-            cropper.zoomTo(0);
+            cropper.rotate(deg); cropper.zoomTo(0);
             setTimeout(() => { smartFit(); }, 50); 
         } 
     }
@@ -254,8 +264,7 @@
         const s = document.getElementById('paper-size').value;
         const o = document.getElementById('paper-orientation').value;
         const targetRatio = (o === 'p') ? paperMap[s][0]/paperMap[s][1] : paperMap[s][1]/paperMap[s][0];
-        const imgWidth = canvasData.width;
-        const imgHeight = canvasData.height;
+        const imgWidth = canvasData.width; const imgHeight = canvasData.height;
         const imgRatio = imgWidth / imgHeight;
 
         let finalWidth, finalHeight;
@@ -316,7 +325,7 @@
                 added++;
             }
         });
-        if (added > 0) pdf.save(`Scan_Combined_v148.pdf`);
+        if (added > 0) pdf.save(`Scan_Combined_v1.49.pdf`);
     };
 </script>
 </body>
