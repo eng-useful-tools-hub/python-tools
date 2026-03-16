@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Smart PDF Scanner - Ver 1.45</title>
+    <title>Smart PDF Scanner - Ver 1.46</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
@@ -13,47 +13,41 @@
         
         #sidebar-container { width: var(--sidebar-width); background: white; border-right: 1px solid #e2e8f0; position: fixed; height: 100vh; overflow-y: auto; z-index: 1000; }
         
-        /* メインコンテンツを画面内に収める */
         .main-content { flex: 1; margin-left: var(--sidebar-width); padding: 15px 30px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; }
-        .container { max-width: 1300px; width: 100%; position: relative; display: flex; flex-direction: column; height: 100%; }
+        .container { max-width: 1400px; width: 100%; position: relative; display: flex; flex-direction: column; height: 100%; }
         .version { position: absolute; top: -5px; right: 0; font-size: 0.7rem; font-weight: bold; color: #94a3b8; padding: 2px 8px; border-radius: 4px; background: #eee; }
         
         h1 { font-size: 1.4rem; margin: 0 0 10px 0; }
         .desc { color: #64748b; font-size: 0.85rem; margin-bottom: 10px; }
 
-        /* 上部設定エリアをコンパクトに */
         .top-nav { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 15px; margin-bottom: 10px; align-items: end; }
-        .card-mini { background: white; padding: 10px 15px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+        .card-mini { background: white; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
         select { width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 0.85rem; background: #fff; }
-        label { font-size: 0.75rem; font-weight: bold; color: #64748b; display: block; margin-bottom: 4px; }
+        label { font-size: 0.7rem; font-weight: bold; color: #64748b; display: block; margin-bottom: 2px; }
 
-        /* ワークスペース：横長プレビュー対応 */
-        .workspace { display: grid; grid-template-columns: 200px 1fr; gap: 15px; flex: 1; min-height: 0; display: none; }
+        .workspace { display: grid; grid-template-columns: 240px 1fr; gap: 15px; flex: 1; min-height: 0; display: none; }
         
-        /* サムネイル：スクロール可能 */
-        .file-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; overflow-y: auto; background: #eef2f7; padding: 8px; border-radius: 8px; border: 1px solid var(--border); }
+        .file-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; overflow-y: auto; background: #eef2f7; padding: 10px; border-radius: 8px; border: 1px solid var(--border); }
         .thumb-item { border: 2px solid #e2e8f0; border-radius: 6px; cursor: pointer; background: #fff; position: relative; padding: 2px; }
         .thumb-item.active { border-color: var(--primary); box-shadow: 0 0 8px rgba(37,99,235,0.2); }
         .thumb-item img { width: 100%; aspect-ratio: 1/1.4; object-fit: contain; background: #eee; display: block; border-radius: 3px; }
         .thumb-status { position: absolute; top: 3px; right: 3px; background: var(--success); color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
 
-        /* エディタ：横長ワイド */
         .editor-main { background: white; border-radius: 8px; border: 1px solid var(--border); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
         
-        /* ステージ：はみ出し厳禁・自動フィット */
-        .stage-wrap { flex: 1; background: #0f172a; border-radius: 6px; overflow: hidden; margin-bottom: 15px; position: relative; display: flex; align-items: center; justify-content: center; }
+        /* プレビュー領域の比率を横長に調整し、拡大を防ぐ */
+        .stage-wrap { flex: 1; background: #0f172a; border-radius: 6px; overflow: hidden; margin-bottom: 10px; position: relative; display: flex; align-items: center; justify-content: center; }
         #stage-image { max-width: 100%; max-height: 100%; display: block; }
 
-        /* 補正パネル：コンパクト横並び */
         .correction-panel { background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; }
         .controls-flex { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
         .tool-group { display: flex; gap: 6px; }
-        .btn-tool { background: #475569; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: bold; white-space: nowrap; }
+        .btn-tool { background: #475569; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: bold; white-space: nowrap; }
         .btn-reset { background: var(--danger); }
         
         .correction-list { display: flex; gap: 15px; }
         .check-item { display: flex; align-items: center; gap: 5px; font-size: 0.85rem; font-weight: bold; cursor: pointer; color: #475569; }
-        .btn-confirm { background: var(--primary); color: white; border: none; padding: 10px 25px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.95rem; }
+        .btn-confirm { background: var(--primary); color: white; border: none; padding: 10px 30px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.95rem; }
         
         .btn-pdf { background: var(--success); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1.1rem; margin-top: 10px; display: none; }
     </style>
@@ -64,9 +58,9 @@
 
 <main class="main-content">
     <div class="container">
-        <div class="version">Ver 1.45</div>
+        <div class="version">Ver 1.46</div>
         <h1>📑 Smart PDF Scanner</h1>
-        <p class="desc">画像をドロップし「ページ確定」してください。プレビューは常に画像全体が表示されるよう自動調整されます。</p>
+        <p class="desc">画像を回転・調整後「ページ確定」してください。プレビューは回転後も常に画像全体が表示されます。</p>
         
         <div class="top-nav">
             <div class="card-mini">
@@ -79,8 +73,8 @@
             </div>
             <div style="display:flex; gap:10px;">
                 <button class="btn-tool btn-reset" style="flex:1" onclick="resetAll()">全リセット</button>
-                <div id="drop-zone" class="card-mini" style="flex:2; border: 2px dashed var(--primary); background: #f0f9ff; cursor: pointer; text-align: center; padding: 8px;">
-                    <span style="font-size: 0.8rem; font-weight: bold; color: var(--primary);">📥 画像を追加ドロップ</span>
+                <div id="drop-zone" class="card-mini" style="flex:2; border: 2px dashed var(--primary); background: #f0f9ff; cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 0.85rem; font-weight: bold; color: var(--primary);">📥 追加ドロップ</span>
                 </div>
             </div>
             <input type="file" id="file-input" multiple accept="image/*" style="display:none;">
@@ -154,155 +148,3 @@
             const div = document.createElement('div');
             div.className = `thumb-item ${i === activeIdx ? 'active' : ''}`;
             div.id = `thumb-${i}`;
-            div.innerHTML = `<img src="${d.orig.src}">${d.proc ? '<div class="thumb-status">✓</div>' : ''}`;
-            div.onclick = () => { saveSettings(); openEditor(i); };
-            list.appendChild(div);
-            if (d.proc) count++;
-        });
-        const btn = document.getElementById('download-pdf-btn');
-        btn.innerText = `✓の全ページ (${count}枚) をPDF保存`;
-        btn.style.display = count > 0 ? 'block' : 'none';
-        if (activeIdx >= 0) {
-            const el = document.getElementById(`thumb-${activeIdx}`);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-    }
-
-    function openEditor(idx) {
-        if (cropper) cropper.destroy();
-        activeIdx = idx; const d = filesData[idx];
-        const img = document.getElementById('stage-image'); img.src = d.orig.src;
-        document.getElementById('opt-bw').checked = d.settings.bw;
-        document.getElementById('opt-sharp').checked = d.settings.sharp;
-        document.getElementById('opt-white').checked = d.settings.white;
-        
-        img.onload = () => {
-            const s = document.getElementById('paper-size').value;
-            const o = document.getElementById('paper-orientation').value;
-            cropper = new Cropper(img, {
-                aspectRatio: (o === 'p') ? paperMap[s][0]/paperMap[s][1] : paperMap[s][1]/paperMap[s][0],
-                viewMode: 1, // 画像をコンテナ内に収める（絶対条件）
-                background: false,
-                autoCropArea: 1,
-                responsive: true,
-                ready() {
-                    if (d.settings.deg !== 0) cropper.rotate(d.settings.deg);
-                    if (d.settings.crop) cropper.setData(d.settings.crop);
-                    else smartFit();
-                    updatePreview();
-                }
-            });
-            img.onload = null;
-        };
-    }
-
-    function saveSettings() {
-        if (!cropper || activeIdx < 0) return;
-        filesData[activeIdx].settings = {
-            bw: document.getElementById('opt-bw').checked,
-            sharp: document.getElementById('opt-sharp').checked,
-            white: document.getElementById('opt-white').checked,
-            deg: cropper.getData().rotate,
-            crop: cropper.getData()
-        };
-    }
-
-    function updatePreview() {
-        if (!cropper) return;
-        const bw = document.getElementById('opt-bw').checked;
-        const sh = document.getElementById('opt-sharp').checked;
-        const wh = document.getElementById('opt-white').checked;
-        let f = "";
-        if (bw) f += "grayscale(1) ";
-        if (wh) f += "contrast(1.2) brightness(1.05) ";
-        if (sh) f += "saturate(0) contrast(1.1) ";
-        const wrap = document.querySelector('.cropper-container');
-        if (wrap) wrap.style.filter = f || "none";
-        saveSettings();
-    }
-
-    function rotateImg(deg) { 
-        if (cropper) { 
-            cropper.rotate(deg); 
-            // 回転後のバウンディングボックスに合わせてキャンバスを再計算させる
-            setTimeout(() => { smartFit(); }, 50); 
-        } 
-    }
-
-    function smartFit() {
-        if (!cropper) return;
-        const canvasData = cropper.getCanvasData();
-        const s = document.getElementById('paper-size').value;
-        const o = document.getElementById('paper-orientation').value;
-        const targetRatio = (o === 'p') ? paperMap[s][0]/paperMap[s][1] : paperMap[s][1]/paperMap[s][0];
-        
-        const imgWidth = canvasData.width;
-        const imgHeight = canvasData.height;
-        const imgRatio = imgWidth / imgHeight;
-
-        let finalWidth, finalHeight;
-        if (imgRatio > targetRatio) {
-            finalHeight = imgHeight;
-            finalWidth = imgHeight * targetRatio;
-        } else {
-            finalWidth = imgWidth;
-            finalHeight = imgWidth / targetRatio;
-        }
-
-        cropper.setCropBoxData({
-            left: canvasData.left + (imgWidth - finalWidth) / 2,
-            top: canvasData.top + (imgHeight - finalHeight) / 2,
-            width: finalWidth,
-            height: finalHeight
-        });
-        updatePreview();
-    }
-
-    function updateRatio() { 
-        if (!cropper) return;
-        const s = document.getElementById('paper-size').value;
-        const o = document.getElementById('paper-orientation').value;
-        cropper.setAspectRatio((o === 'p') ? paperMap[s][0]/paperMap[s][1] : paperMap[s][1]/paperMap[s][0]);
-        smartFit(); 
-    }
-
-    function applyPage() {
-        if (!cropper) return;
-        saveSettings();
-        const s = document.getElementById('paper-size').value;
-        const o = document.getElementById('paper-orientation').value;
-        let [pW, pH] = (o === 'p') ? paperMap[s] : [paperMap[s][1], paperMap[s][0]];
-        const canv = cropper.getCroppedCanvas({ width: pW * 3.5 });
-        const final = document.createElement('canvas');
-        final.width = canv.width; final.height = canv.height;
-        const ctx = final.getContext('2d');
-        const set = filesData[activeIdx].settings;
-        let f = "";
-        if (set.bw) f += "grayscale(1) ";
-        if (set.white) f += "contrast(1.2) brightness(1.05) ";
-        if (set.sharp) f += "saturate(0) contrast(1.1) ";
-        ctx.filter = f || "none";
-        ctx.drawImage(canv, 0, 0);
-        filesData[activeIdx].proc = final.toDataURL('image/jpeg', 0.9);
-        renderThumbs();
-        if (activeIdx < filesData.length - 1) openEditor(activeIdx + 1);
-    }
-
-    document.getElementById('download-pdf-btn').onclick = () => {
-        const { jsPDF } = window.jspdf;
-        const s = document.getElementById('paper-size').value;
-        const o = document.getElementById('paper-orientation').value;
-        const pdf = new jsPDF(o, 'mm', s);
-        let added = 0;
-        filesData.forEach((d) => {
-            if (d.proc) {
-                if (added > 0) pdf.addPage(s, o);
-                pdf.addImage(d.proc, 'JPEG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
-                added++;
-            }
-        });
-        if (added > 0) pdf.save(`Scan_Combined_v145.pdf`);
-    };
-</script>
-</body>
-</html>
