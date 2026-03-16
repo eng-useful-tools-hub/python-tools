@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart PDF Scanner - Ver 1.57.1</title>
+    <title>Smart PDF Scanner - Ver 1.58</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
@@ -15,10 +15,20 @@
         #pc-sidebar { width: var(--sidebar-width); background: white; border-right: 1px solid #e2e8f0; height: 100vh; display: flex; flex-direction: column; flex-shrink: 0; }
         .main-content { flex: 1; padding: 10px 15px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; overflow-y: auto; }
         .container { max-width: 1200px; width: 100%; margin: 0 auto; position: relative; display: flex; flex-direction: column; min-height: 100%; }
-        
-        h1 { font-size: 1.1rem; margin: 0 0 5px 0; }
 
-        /* ★ テキストサイズを 1rem に調整 */
+        /* ★ バージョン表示のデザイン変更 (image_d61c67.png を再現) */
+        .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .version-badge { 
+            font-size: 0.75rem; 
+            color: #475569; 
+            background-color: #e2e8f0; 
+            padding: 2px 12px; 
+            border-radius: 20px; 
+            font-weight: 500;
+        }
+        
+        h1 { font-size: 1.5rem; margin: 0; color: #1e293b; }
+
         .guide-area { background: #eff6ff; border-left: 4px solid var(--primary); padding: 12px; margin-bottom: 8px; border-radius: 4px; }
         .guide-area p { font-size: 1rem; margin: 0 0 6px 0; line-height: 1.5; }
         
@@ -27,7 +37,7 @@
 
         .top-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 8px; }
         .card-mini { background: white; padding: 5px 8px; border-radius: 6px; border: 1px solid #e2e8f0; }
-        select { width: 100%; padding: 3px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 0.85rem; }
+        select { width: 100%; padding: 3px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 0.85rem; background: #fff; }
         label { font-size: 0.65rem; font-weight: bold; color: #64748b; display: block; }
 
         .workspace { display: grid; grid-template-columns: 160px 1fr; gap: 10px; flex: 1; min-height: 0; display: none; margin-bottom: 8px; }
@@ -65,7 +75,7 @@
             .tool-group { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
             .correction-list { flex-direction: column; gap: 4px; }
             .btn-confirm { width: 100%; padding: 12px 5px; }
-            .guide-area p { font-size: 0.9rem; } /* スマホでは少しだけ抑える */
+            .guide-area p { font-size: 0.9rem; }
         }
     </style>
 </head>
@@ -75,8 +85,10 @@
 
 <main class="main-content">
     <div class="container">
-        <div class="version">Ver 1.57.1</div>
-        <h1>📑 Smart PDF Scanner</h1>
+        <div class="header-flex">
+            <h1>📑 Smart PDF Scanner</h1>
+            <div class="version-badge">Version 1.58</div>
+        </div>
 
         <div class="guide-area">
             <p>・このツールは主に複数の画像ファイルをPDFにするためを想定したツールです。</p>
@@ -132,11 +144,14 @@
 </main>
 
 <script>
-    // 内部ロジックは Ver 1.57 を維持
     let filesData = []; let activeIdx = -1; let cropper = null;
     const paperMap = { a4: [210, 297], a3: [297, 420], b4: [250, 353] };
 
-    fetch('sidebar.html').then(res => res.text()).then(html => { document.getElementById('pc-sidebar').innerHTML = html; }).catch(() => { document.getElementById('pc-sidebar').innerHTML = '<div style="padding:15px;">Menu</div>'; });
+    fetch('sidebar.html').then(res => res.text()).then(html => { 
+        document.getElementById('pc-sidebar').innerHTML = html; 
+    }).catch(() => { 
+        document.getElementById('pc-sidebar').innerHTML = '<div style="padding:15px;">Menu</div>'; 
+    });
 
     document.getElementById('drop-zone').onclick = () => document.getElementById('file-input').click();
     document.getElementById('file-input').onchange = (e) => handleFiles(e.target.files);
@@ -272,7 +287,7 @@
         const pdf = new jsPDF(o, 'mm', s);
         let added = 0;
         filesData.forEach((d) => { if (d.proc) { if (added > 0) pdf.addPage(s, o); pdf.addImage(d.proc, 'JPEG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight()); added++; } });
-        if (added > 0) pdf.save(`Scan_Combined_v1.57.pdf`);
+        if (added > 0) pdf.save(`Scan_Combined_v1.58.pdf`);
     };
 </script>
 </body>
